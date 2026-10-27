@@ -1,0 +1,22 @@
+{
+  "name": "Spendable Deluxe",
+  "short_name": "Spendable Deluxe",
+  "description": "How much can I safely spend today? A daily spending cockpit that protects bills, essentials, savings, debt payments, and your cash buffer.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0c131e",
+  "theme_color": "#132035",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
