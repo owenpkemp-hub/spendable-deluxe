@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Spendable Tracker</title>
+<meta name="description" content="Private budget tracker: safe-to-spend, bills, subscriptions, savings and insights.">
+<meta name="theme-color" content="#127a5b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Spendable">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header id="top"></header>
+  <main id="view"></main>
+</div>
+<nav id="tabs" aria-label="Main"></nav>
+<button id="fab" aria-label="Add transaction" data-act="new-tx">+</button>
+<div id="sheets"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="core.js"></script>
+<script src="charts.js"></script>
+<script src="views.js"></script>
+<script src="sheets.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
