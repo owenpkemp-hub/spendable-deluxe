@@ -516,8 +516,8 @@ const SETTINGS = {
       <label class="btn" style="text-align:center;cursor:pointer">⚡ Sync Apple Pay<input type="file" id="wl-file" hidden></label>
       <div class="small muted" style="margin:2px 2px 10px;line-height:1.5">Pick <b>Spendable Apple Pay</b> from Recents, or from iCloud Drive › Shortcuts. You can sync as often as you like; payments already imported are skipped. ${sp.walletLastSync ? `Last synced ${relDay(ymd(new Date(sp.walletLastSync))).toLowerCase()}.` : ''} Once you've synced, a <b>Sync Apple Pay</b> button also appears on Home.</div>
       <div class="sec-h">Good to know</div>
-      <div class="small muted" style="line-height:1.6">• The Wallet automation needs iOS 17 or later. It runs for Apple Pay taps in stores, apps and websites with cards that support transaction automations (most debit and credit cards in Wallet).<br>
-      • Swiping a physical card doesn't trigger it. Add those with the <b>+</b> button.<br>
+      <div class="small muted" style="line-height:1.6">• The Wallet automation needs iOS 17 or later. It runs when you <b>tap to pay in person</b> with your iPhone or Apple Watch, using cards that support transaction automations (most debit and credit cards in Wallet).<br>
+      • <b>Online and in-app Apple Pay</b> purchases usually don't trigger it, and neither do physical card swipes. Add those with the <b>+</b> button, or import them from your bank's CSV.<br>
       • The file stays in your own iCloud Drive. Nothing goes through a server.</div>
       <div class="sec-h">Using Spendable in Safari instead?</div>
       <div class="small muted" style="line-height:1.6">If you use Spendable as a Safari tab rather than from the Home Screen, you can log each payment instantly. Instead of the two actions above, add a <b>URL</b> action with the link below (swap AMOUNT and MERCHANT for the Shortcut Input variables), then an <b>Open URLs</b> action. This doesn't work with the Home Screen app, because iPhone always opens links in Safari, which keeps separate data.</div>
