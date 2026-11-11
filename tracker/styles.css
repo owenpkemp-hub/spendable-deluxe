@@ -4,7 +4,7 @@
   --neg: #c9412f; --neg-soft: #fbe4e0; --warn: #b57a0c; --warn-soft: #f8ecd2;
   --c1: #127a5b; --c2: #e0893a; --c3: #4a6fd8; --c4: #c4497a; --c5: #8a6bd1; --c6: #2a9ea3; --c7: #a8952f; --c8: #7d8a84;
   --shadow: 0 1px 2px rgba(20,30,25,.06), 0 4px 16px rgba(20,30,25,.05);
-  --radius: 18px;
+  --radius: 18px; --seg-on: #ffffff;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -13,7 +13,7 @@
     --accent: #3fcf9b; --accent-ink: #05261a; --accent-soft: #163329;
     --neg: #ff7b6b; --neg-soft: #3a1d19; --warn: #f2b84b; --warn-soft: #3a2d12;
     --c1: #3fcf9b; --c2: #f0a25a; --c3: #7c9cff; --c4: #ee7aa6; --c5: #b39bff; --c6: #4fd0d4; --c7: #d9c55a; --c8: #9aa7a1;
-    --shadow: none; color-scheme: dark;
+    --shadow: none; color-scheme: dark; --seg-on: #34403b;
   }
 }
 :root[data-theme="dark"] {
@@ -21,7 +21,7 @@
   --accent: #3fcf9b; --accent-ink: #05261a; --accent-soft: #163329;
   --neg: #ff7b6b; --neg-soft: #3a1d19; --warn: #f2b84b; --warn-soft: #3a2d12;
   --c1: #3fcf9b; --c2: #f0a25a; --c3: #7c9cff; --c4: #ee7aa6; --c5: #b39bff; --c6: #4fd0d4; --c7: #d9c55a; --c8: #9aa7a1;
-  --shadow: none; color-scheme: dark;
+  --shadow: none; color-scheme: dark; --seg-on: #34403b;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); }
@@ -135,7 +135,7 @@ button { cursor: pointer; }
 /* segmented */
 .seg { display: flex; background: var(--card2); border-radius: 12px; padding: 3px; gap: 2px; }
 .seg button { flex: 1; border: 0; background: none; border-radius: 9px; padding: 7px 6px; font-weight: 650; font-size: 13.5px; color: var(--muted); }
-.seg button.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.seg button.on { background: var(--seg-on); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
 .nav-row { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
 .nav-row .title { flex: 1; text-align: center; font-weight: 700; }
 .arrow { width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--card); box-shadow: var(--shadow); font-size: 16px; font-weight: 700; }
@@ -173,12 +173,12 @@ button { cursor: pointer; }
 #sheets .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.38); z-index: 40; animation: fade .2s; }
 .sheet { position: fixed; z-index: 41; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 600px; max-height: 94vh; max-height: 94dvh; overflow-y: auto; background: var(--bg); border-radius: 22px 22px 0 0; padding: 0 16px calc(24px + env(safe-area-inset-bottom)); animation: up .26s cubic-bezier(.2,.8,.2,1); overscroll-behavior: contain; }
 .sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto; position: relative; top: 8px; }
-.sheet .drag-zone { touch-action: none; }
+.sheet .drag-zone { touch-action: none; position: sticky; top: 0; z-index: 4; background: var(--bg); margin: 0 -16px; padding: 0 16px; }
 .sheet { transition: transform .22s ease; }
 .sheet.dragging { transition: none; }
 .sheet-foot { position: sticky; bottom: calc(-24px - env(safe-area-inset-bottom)); margin: 8px -16px calc(-24px - env(safe-area-inset-bottom)); padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(to bottom, transparent, var(--bg) 24%); z-index: 3; }
 .sheet-foot .btn { margin: 0; box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 30%, transparent); }
-.sheet-h { display: flex; align-items: center; gap: 8px; position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 2; }
+.sheet-h { display: flex; align-items: center; gap: 8px; background: var(--bg); padding: 10px 0; }
 .sheet-h h3 { flex: 1; min-width: 0; margin: 0; font-size: 17px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sheet-h button { border: 0; background: none; color: var(--accent); font-weight: 650; font-size: 15.5px; padding: 8px 2px; width: 76px; flex: none; text-align: left; white-space: nowrap; }
 .sheet-h button.r { text-align: right; }
@@ -195,7 +195,7 @@ button { cursor: pointer; }
 .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 6px 0 12px; }
 .cat-grid button { border: 1px solid transparent; background: var(--card); border-radius: 14px; padding: 9px 4px 7px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 600; box-shadow: var(--shadow); min-width: 0; }
 .cat-grid button .em { font-size: 22px; }
-.cat-grid button span:last-child { max-width: 100%; line-height: 1.2; min-height: 2.4em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align: center; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; font-size: 10.5px; }
+.cat-grid button span:last-child { max-width: 100%; line-height: 1.2; min-height: 2.4em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align: center; overflow-wrap: break-word; -webkit-hyphens: manual; hyphens: manual; font-size: 10.5px; }
 .cat-grid button.on { border-color: var(--accent); background: var(--accent-soft); }
 .sugg { display: flex; gap: 6px; flex-wrap: wrap; margin: -4px 0 12px; }
 .sugg button { border: 0; background: var(--card2); border-radius: 999px; padding: 5px 10px; font-size: 13px; font-weight: 600; }
@@ -251,3 +251,8 @@ body.sheet-open { position: fixed; left: 0; right: 0; overflow: hidden; }
 #fab.hide { transform: translateY(24px) scale(.6); opacity: 0; pointer-events: none; }
 #fab { transition: transform .2s ease, opacity .2s ease; }
 body.selecting #fab { display: none; }
+
+/* Fixed-height sheets: switching Expense/Income/Transfer no longer resizes the sheet */
+.sheet.tall { height: 92vh; height: 92dvh; display: flex; flex-direction: column; }
+.sheet.tall .sheet-b { flex: 1 0 auto; display: flex; flex-direction: column; }
+.sheet.tall .sheet-foot { margin-top: auto; }

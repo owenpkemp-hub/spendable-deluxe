@@ -1,12 +1,12 @@
 'use strict';
 /* ===== Sheet stack ===== */
 const sheetStack = [];
-function openSheet(title, html, { left = 'Cancel', right = null, onRight = null, onMount = null, onClose = null } = {}) {
+function openSheet(title, html, { left = 'Cancel', right = null, onRight = null, onMount = null, onClose = null, tall = false } = {}) {
   const root = $('#sheets');
   if (!sheetStack.length) root.innerHTML = '<div class="backdrop" data-act="close-sheet"></div>';
   sheetStack.forEach(s => s.el.style.display = 'none');
   const el = document.createElement('div');
-  el.className = 'sheet'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', title);
+  el.className = 'sheet' + (tall ? ' tall' : ''); el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', title);
   el.innerHTML = `<div class="drag-zone"><div class="grab"></div><div class="sheet-h"><button data-act="close-sheet">${sheetStack.length && left === 'Cancel' ? '‹ Back' : esc(left)}</button><h3>${esc(title)}</h3><button class="r" data-role="right" ${right ? '' : 'tabindex="-1" aria-hidden="true"'}>${right ? esc(right) : ''}</button></div></div><div class="sheet-b">${html}</div>`;
   root.appendChild(el);
   const entry = { el, onClose };
@@ -15,6 +15,7 @@ function openSheet(title, html, { left = 'Cancel', right = null, onRight = null,
   if (onMount) onMount(el);
   lockScroll(true);
   bindSheetDrag(el);
+  $('#toast').classList.remove('show');
   return el;
 }
 /* Keep the page behind a sheet from scrolling (iOS ignores overflow:hidden on body) */
@@ -75,7 +76,8 @@ function openTxSheet(opts = {}) {
       <div class="amount-cur">${esc(acctCur(st.accountId))}</div>
       <label class="field" style="margin-top:12px"><span>${st.kind === 'transfer' ? 'Note' : 'Description'}</span><input class="input" id="tx-note" placeholder="${st.kind === 'income' ? 'e.g. Paycheck' : st.kind === 'transfer' ? 'Optional' : 'e.g. Corner Café'}" value="${esc(st.note)}" autocomplete="off"></label>
       <div class="sugg" id="tx-sugg">${sugg.map(s => `<button data-note="${esc(s.note)}" data-cat="${s.categoryId || ''}">${esc(catEmoji(s.categoryId))} ${esc(s.note)}</button>`).join('')}</div>
-      ${st.kind === 'transfer' ? `<div class="two"><label class="field"><span>From</span><select class="input" id="tx-acc">${accOptions(st.accountId)}</select></label><label class="field"><span>To</span><select class="input" id="tx-to">${accOptions(st.toAccountId, a => a.id !== st.accountId)}</select></label></div>`
+      ${st.kind === 'transfer' ? (S().accounts.filter(a => !a.archived).length < 2 ? `<div class="card row" style="margin:4px 0 12px"><div class="emoji">🏦</div><div class="grow"><div style="font-weight:650">Add a second account</div><div class="small muted">Transfers move money between your accounts, like checking to savings.</div></div><button class="mini-btn" data-addacc="1">Add</button></div>`
+      : `<div class="two"><label class="field"><span>From</span><select class="input" id="tx-acc">${accOptions(st.accountId)}</select></label><label class="field"><span>To</span><select class="input" id="tx-to">${accOptions(st.toAccountId, a => a.id !== st.accountId)}</select></label></div>`)
       : `<div class="cat-grid">${cats.map(c => `<button data-cat="${c.id}" class="${st.categoryId === c.id ? 'on' : ''}"><span class="em">${c.emoji}</span><span>${esc(c.name)}</span></button>`).join('')}<button data-newcat="1"><span class="em">＋</span><span>New</span></button></div>
         ${!editing && !more ? '<div class="hint">Tap a category to save instantly</div>' : ''}`}
       ${more ? `<div class="two">
@@ -104,7 +106,7 @@ function openTxSheet(opts = {}) {
     const amt = Math.abs(parseAmount(st.amount));
     if (!amt) { toast('Enter an amount'); $('#tx-amt', el).focus(); return; }
     if (st.kind !== 'transfer' && !st.categoryId) { toast('Pick a category'); return; }
-    if (st.kind === 'transfer' && (!st.toAccountId || st.toAccountId === st.accountId)) { toast('Pick two different accounts'); return; }
+    if (st.kind === 'transfer' && (!st.toAccountId || st.toAccountId === st.accountId)) { toast(S().accounts.length < 2 ? 'Add a second account first' : 'Pick two different accounts'); return; }
     if (!isValidDate(st.date)) st.date = today();
     const planned = st.planned || st.date > today();
     const rec = { amount: round2(amt), kind: st.kind, categoryId: st.kind === 'transfer' ? null : st.categoryId, accountId: st.accountId, toAccountId: st.kind === 'transfer' ? st.toAccountId : null, date: st.date, note: (st.note || '').trim(), tags: st.tags, planned };
@@ -124,6 +126,7 @@ function openTxSheet(opts = {}) {
     if (!editing) { const last = S().transactions[S().transactions.length - 1]; toast(`Logged ${fmt(rec.amount, acctCur(rec.accountId))}${planned ? ' as planned' : ''}`, 'Undo', () => { S().transactions = S().transactions.filter(x => x !== last); if (last.recurringId && st.repeat !== 'none') S().recurring = S().recurring.filter(r => r.id !== last.recurringId); commit('Removed'); }); }
   };
   const el = openSheet(editing ? 'Edit transaction' : 'New transaction', body(), {
+    tall: true,
     onMount: el => {
       const rebind = () => {
         const b = $('.sheet-b', el); b.innerHTML = body();
@@ -136,6 +139,7 @@ function openTxSheet(opts = {}) {
         const b = e.target.closest('button'); if (!b || !el.contains(b) || b.closest('.sheet-h')) return;
         if (b.dataset.k) { read(el); st.kind = b.dataset.k; st.categoryId = null; if (st.kind === 'transfer' && !st.toAccountId) st.toAccountId = (S().accounts.find(a => !a.archived && a.id !== st.accountId) || {}).id; rebind(); }
         else if (b.dataset.more) { read(el); more = true; rebind(); }
+        else if (b.dataset.addacc) { read(el); openAccSheet(null); sheetStack[sheetStack.length - 2].refresh = () => { st.accountId = st.accountId || defaultAccount(); st.toAccountId = (S().accounts.find(a => !a.archived && a.id !== st.accountId) || {}).id; rebind(); }; }
         else if (b.dataset.newcat) { read(el); openCatSheet(null, st.kind, c => { st.categoryId = c.id; rebind(); }); }
         else if (b.dataset.note != null) { read(el); st.note = b.dataset.note; if (b.dataset.cat && cat(b.dataset.cat)) st.categoryId = b.dataset.cat; rebind(); }
         else if (b.dataset.cat) { read(el); st.categoryId = b.dataset.cat; if (!editing && !more && Math.abs(parseAmount(st.amount)) > 0) doSave(el); else rebind(); }
@@ -194,6 +198,7 @@ function openRecSheet(id, preset = {}) {
     const a = $('#r-active', el); if (a) st.active = a.checked;
   };
   openSheet(r ? 'Recurring' : 'New recurring', body(), {
+    tall: true,
     onMount: el => {
       el.addEventListener('click', e => {
         const b = e.target.closest('button'); if (!b || b.closest('.sheet-h')) return;
