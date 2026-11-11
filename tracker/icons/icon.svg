@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
 <defs>
-  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c2045"/><stop offset=".55" stop-color="#0a0b1c"/><stop offset="1" stop-color="#04040a"/></linearGradient>
-  <radialGradient id="aura" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#6d5cff" stop-opacity=".55"/><stop offset=".6" stop-color="#2bd9ff" stop-opacity=".12"/><stop offset="1" stop-color="#2bd9ff" stop-opacity="0"/></radialGradient>
-  <linearGradient id="glyph" x1="420" y1="280" x2="620" y2="760" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#5ff4ff"/><stop offset=".5" stop-color="#8f7bff"/><stop offset="1" stop-color="#ff5fd2"/></linearGradient>
-  <linearGradient id="ring" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5ff4ff" stop-opacity="0"/><stop offset=".35" stop-color="#5ff4ff" stop-opacity=".9"/><stop offset=".7" stop-color="#c58bff"/><stop offset="1" stop-color="#ff5fd2" stop-opacity="0"/></linearGradient>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14264a"/><stop offset=".55" stop-color="#07101f"/><stop offset="1" stop-color="#04040a"/></linearGradient>
+  <radialGradient id="aura" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#2f7dff" stop-opacity=".5"/><stop offset=".6" stop-color="#2bd9ff" stop-opacity=".12"/><stop offset="1" stop-color="#2bd9ff" stop-opacity="0"/></radialGradient>
+  <linearGradient id="glyph" x1="420" y1="280" x2="620" y2="760" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7dffd8"/><stop offset=".45" stop-color="#3fd4ff"/><stop offset="1" stop-color="#3d6bff"/></linearGradient>
+  <linearGradient id="ring" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5ff4ff" stop-opacity="0"/><stop offset=".35" stop-color="#7dffd8" stop-opacity=".9"/><stop offset=".7" stop-color="#4f86ff"/><stop offset="1" stop-color="#3d6bff" stop-opacity="0"/></linearGradient>
   <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".09"/><stop offset=".45" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
   <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="28"/></filter>
   <filter id="dotglow" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="10"/></filter>
@@ -20,7 +20,7 @@
 </g>
 <g transform="rotate(-20 512 512)">
   <g clip-path="url(#front)"><ellipse cx="512" cy="512" rx="400" ry="104" fill="none" stroke="url(#ring)" stroke-width="11"/></g>
-  <circle cx="827.2" cy="576.0" r="22" fill="#9ff7ff" filter="url(#dotglow)"/>
+  <circle cx="827.2" cy="576.0" r="22" fill="#8fffe0" filter="url(#dotglow)"/>
   <circle cx="827.2" cy="576.0" r="11" fill="#ffffff"/>
 </g>
 <rect width="1024" height="1024" fill="url(#sheen)"/>
