@@ -67,18 +67,19 @@ const ACTIONS = {
       }
     } else sp.income.expected = Math.abs(parseAmount($('#ob-exp').value)) || 0;
     processRecurring(); save(); render(); window.scrollTo(0, 0);
-    toast('All set. Tap + to log a transaction');
+    toast('All set. Tap + to log a transaction'); runPending();
   },
   'backup-now'() { SETTINGS.backup(); },
   'backup-later'() { DB.backupSnooze = Date.now(); save(); render(); },
   'ios-tip'() { SETTINGS.install(); },
-  'ob-sample'() { loadSample(); save(); render(); window.scrollTo(0, 0); toast('Sample data loaded. Erase it any time in Settings'); }
+  'ob-sample'() { loadSample(); save(); render(); window.scrollTo(0, 0); toast('Sample data loaded. Erase it any time in Settings'); runPending(); }
 };
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const fn = ACTIONS[el.dataset.act]; if (!fn) return;
   e.preventDefault(); fn(el, e);
 });
+document.addEventListener('change', e => { if (e.target.matches('[data-wallet-sync]')) syncWalletFile(e.target.files[0], S().walletAccount); });
 document.addEventListener('input', e => {
   if (e.target.id === 'search') {
     ui.search = e.target.value; const pos = e.target.selectionStart;
@@ -96,8 +97,9 @@ document.addEventListener('keydown', e => {
 document.addEventListener('click', e => { if (!e.target.closest('.swipe')) $$('.swipe .front').forEach(f => { if (+f.dataset.off) { f.style.transform = ''; f.dataset.off = 0; } }); }, true);
 
 /* ===== URL actions (Apple Pay / Siri Shortcuts, PWA shortcuts) ===== */
+function runPending() { try { const p = localStorage.getItem('spendable-pending'); if (p) { localStorage.removeItem('spendable-pending'); setTimeout(() => handleURL(new URLSearchParams(p)), 600); } } catch (e) { } }
 function handleURL(params) {
-  if (!S()) return;
+  if (!S()) { if (params.has('add')) { try { localStorage.setItem('spendable-pending', params.toString()); } catch (e) { } } return; }
   const sp = S();
   if (params.has('view')) { const v = params.get('view'); if (VIEWS[v]) { ui.tab = v; render(); } if (v === 'calendar') openCalendar(); }
   if (params.has('new')) { openTxSheet({ kind: ['expense', 'income', 'transfer'].includes(params.get('new')) ? params.get('new') : 'expense' }); }
@@ -120,7 +122,7 @@ function handleURL(params) {
   const t = { id: uid(), created: Date.now(), date: today(), amount: round2(amount), kind, categoryId: c ? c.id : null, accountId: (a || {}).id || defaultAccount(), toAccountId: null, note, tags, planned: false };
   sp.transactions.push(t); save(); render();
   const s = safeToSpend();
-  toast(`Logged ${fmt(t.amount, acctCur(t.accountId))} ${c ? c.emoji + ' ' + c.name : ''} · ${fmt(Math.max(0, s.perDay))}/day left`, 'Edit', () => openTxSheet({ id: t.id }));
+  toast(`Logged ${fmt(t.amount, acctCur(t.accountId))} ${c ? c.emoji + ' ' + c.name : ''}${isIOS() && !isStandalone() ? ' in Safari' : ` · ${fmt(Math.max(0, s.perDay))}/day left`}`, 'Edit', () => openTxSheet({ id: t.id }));
 }
 
 /* ===== Reminders ===== */

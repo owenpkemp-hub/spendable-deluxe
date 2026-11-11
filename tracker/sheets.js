@@ -404,7 +404,7 @@ function settingsHTML() {
       ${item('categories', '🏷️', 'Categories', `${sp.categories.length} categories`)}
       ${item('reminders', '🔔', 'Payment reminders', sp.reminders ? `On · ${sp.remindDays} day${sp.remindDays > 1 ? 's' : ''} before` : 'Off')}</ul></div>
     <div class="sec-h">Logging</div><div class="card flush set-list"><ul class="list">
-      ${item('shortcuts', '⚡', 'Auto-log Apple Pay & Siri', 'Log each tap-to-pay with an iOS Shortcuts automation')}
+      ${item('shortcuts', '⚡', 'Auto-log Apple Pay', S().walletLastSync ? `Last synced ${relDay(ymd(new Date(S().walletLastSync))).toLowerCase()}` : 'Track every tap-to-pay with an iPhone automation')}
       ${item('install', '📲', 'Add to Home Screen', 'Opens instantly and works offline')}</ul></div>
     <div class="sec-h">Appearance &amp; currency</div><div class="card flush set-list"><ul class="list">
       ${item('theme', '🌓', 'Theme', { auto: 'Match system', light: 'Light', dark: 'Dark' }[DB.theme || 'auto'])}
@@ -495,33 +495,43 @@ const SETTINGS = {
   },
   shortcuts() {
     const url = location.href.split(/[?#]/)[0];
-    const html = `<div class="card small"><b>How it works:</b> iPhone Shortcuts can run an automation whenever you tap to pay with Apple Pay. The automation opens Spendable with the amount and merchant, and the expense is logged right away. No bank connection needed.</div>
-      <div class="sec-h">Set up the Apple Pay automation</div>
-      <ol class="steps small">
-        <li>Add Spendable to your Home Screen first (Share › Add to Home Screen) and open it once.</li>
-        <li>Open the <b>Shortcuts</b> app › <b>Automation</b> › <b>+</b> › <b>Transaction</b> (Wallet).</li>
-        <li>Choose your cards, pick <b>Run Immediately</b>, then <b>New Blank Automation</b>.</li>
-        <li>Add the <b>URL</b> action and paste the link below. Replace <code>AMOUNT</code> and <code>MERCHANT</code> with the <i>Shortcut Input › Amount</i> and <i>Merchant</i> variables.</li>
-        <li>Add the <b>Open URLs</b> action. Done — every Apple Pay tap is now logged.</li>
+    const sp = S();
+    const html = `<div class="card small" style="line-height:1.55"><b>How it works:</b> an iPhone Shortcuts automation runs every time you tap to pay with Apple Pay. It adds a line to a small file in iCloud Drive. Tap <b>Sync Apple Pay</b> here and every new payment is added at once, with duplicates skipped and categories guessed from your history. No bank connection needed.</div>
+      <div class="sec-h">1 · Create the automation (once)</div>
+      <ol class="steps small" style="line-height:1.55">
+        <li>Open the <b>Shortcuts</b> app and tap the <b>Automation</b> tab at the bottom.</li>
+        <li>Tap <b>+</b> (top right), or <b>New Automation</b> if you don't have any yet.</li>
+        <li>Scroll down and tap <b>Wallet</b>.</li>
+        <li>Choose your cards (or leave it on any card), select <b>Run Immediately</b>, then tap <b>Next</b>.</li>
+        <li>Tap <b>New Blank Automation</b>, then <b>Add Action</b>.</li>
+        <li>Search for <b>Text</b> and add it. In the text box, build this line:<br>
+          <span class="code" style="display:block;margin-top:6px">Current Date | Amount | Merchant</span>
+          To insert each blue variable, tap in the box and use the bar above the keyboard: pick <b>Current Date</b>, type <b>&nbsp;|&nbsp;</b>, pick <b>Shortcut Input</b>, then tap it and change it to <b>Amount</b>. Type <b>&nbsp;|&nbsp;</b>, add <b>Shortcut Input</b> again and change it to <b>Merchant</b>.</li>
+        <li>Tap the <b>Current Date</b> variable and set <b>Date Format</b> to <b>ISO 8601</b>.</li>
+        <li>Search for <b>Append to Text File</b> and add it. Tap the file name and set it to <b>Spendable Apple Pay</b>. Leave <b>Make New Line</b> on.</li>
+        <li>Tap <b>Done</b>. The next time you tap to pay, a line is added to <i>iCloud Drive › Shortcuts › Spendable Apple Pay.txt</i>.</li>
       </ol>
-      <div class="code" id="sc-url">${esc(url)}?add=AMOUNT&amp;note=MERCHANT</div>
-      <button class="btn ghost" data-copy="sc-url">Copy link</button>
-      <div class="sec-h">Optional parameters</div>
-      <div class="small muted" style="line-height:1.7"><code>&amp;category=Coffee</code> pick a category by name (otherwise it's guessed from past payments with that merchant)<br>
-        <code>&amp;account=Credit%20card</code> pick an account by name<br>
-        <code>&amp;type=income</code> log income instead<br>
-        <code>&amp;tags=work,trip</code> add tags<br>
-        <code>&amp;confirm=1</code> open the form to review it instead of saving straight away</div>
-      <div class="sec-h">Siri</div>
-      <div class="small muted" style="line-height:1.6">Make a shortcut named <b>"Log expense"</b> with <i>Ask for Number</i> › <i>URL</i> (<code>${esc(url)}?add=[Number]&amp;confirm=1</code>) › <i>Open URLs</i>. Then say "Hey Siri, log expense". Make one named <b>"What's left"</b> that opens <code>${esc(url)}?view=budget</code> to see your remaining budget.</div>
-      <div class="sec-h">Try it</div>
-      <button class="btn ghost" data-test="1">Log a test 4.50 Coffee</button>`;
-    openSheet('Auto-log & Siri', html, {
-      onMount: el => el.addEventListener('click', async e => {
-        const b = e.target.closest('button'); if (!b) return;
-        if (b.dataset.copy) { const txt = $('#' + b.dataset.copy, el).textContent; try { await navigator.clipboard.writeText(txt); toast('Copied'); } catch (err) { toast('Select the text to copy it'); } }
-        if (b.dataset.test) { closeSheet(true); handleURL(new URLSearchParams('add=4.50&note=Test%20coffee&category=Coffee')); }
-      })
+      <div class="sec-h">2 · Sync into Spendable</div>
+      <label class="field"><span>Log Apple Pay payments to</span><select class="input" id="wl-acc">${accOptions(sp.walletAccount || defaultAccount())}</select></label>
+      <label class="btn" style="text-align:center;cursor:pointer">⚡ Sync Apple Pay<input type="file" accept=".txt,text/plain" id="wl-file" hidden></label>
+      <div class="small muted" style="margin:2px 2px 10px;line-height:1.5">Pick <b>Spendable Apple Pay</b> from Recents, or from iCloud Drive › Shortcuts. You can sync as often as you like; payments already imported are skipped. ${sp.walletLastSync ? `Last synced ${relDay(ymd(new Date(sp.walletLastSync))).toLowerCase()}.` : ''} Once you've synced, a <b>Sync Apple Pay</b> button also appears on Home.</div>
+      <div class="sec-h">Good to know</div>
+      <div class="small muted" style="line-height:1.6">• The Wallet automation needs iOS 17 or later. It runs for Apple Pay taps in stores, apps and websites with cards that support transaction automations (most debit and credit cards in Wallet).<br>
+      • Swiping a physical card doesn't trigger it. Add those with the <b>+</b> button.<br>
+      • The file stays in your own iCloud Drive. Nothing goes through a server.</div>
+      <div class="sec-h">Using Spendable in Safari instead?</div>
+      <div class="small muted" style="line-height:1.6">If you use Spendable as a Safari tab rather than from the Home Screen, you can log each payment instantly. Instead of the two actions above, add a <b>URL</b> action with the link below (swap AMOUNT and MERCHANT for the Shortcut Input variables), then an <b>Open URLs</b> action. This doesn't work with the Home Screen app, because iPhone always opens links in Safari, which keeps separate data.</div>
+      <div class="code" id="sc-url" style="margin-top:8px">${esc(url)}?add=AMOUNT&amp;note=MERCHANT</div>
+      <button class="btn ghost" data-copy="sc-url">Copy link</button>`;
+    openSheet('Auto-log Apple Pay', html, {
+      onMount: el => {
+        $('#wl-acc', el).onchange = e => { sp.walletAccount = e.target.value; save(); };
+        $('#wl-file', el).onchange = e => syncWalletFile(e.target.files[0], $('#wl-acc', el).value);
+        el.addEventListener('click', async e => {
+          const b = e.target.closest('button'); if (!b) return;
+          if (b.dataset.copy) { const txt = $('#' + b.dataset.copy, el).textContent; try { await navigator.clipboard.writeText(txt); toast('Copied'); } catch (err) { toast('Select the text to copy it'); } }
+        });
+      }
     });
   },
   install() {
@@ -590,6 +600,19 @@ const SETTINGS = {
     commit('Space erased'); refreshSettings();
   }
 };
+function syncWalletFile(file, accountId) {
+  if (!file) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const r = importWalletText(rd.result, accountId || S().walletAccount);
+    if (accountId) S().walletAccount = accountId;
+    closeSheet(true); save(); render();
+    if (r.added) toast(`Added ${r.added} Apple Pay payment${r.added > 1 ? 's' : ''}${r.dup ? ` · ${r.dup} already in` : ''}`, 'Undo', () => { const ids = new Set(r.addedTx.map(t => t.id)); S().transactions = S().transactions.filter(t => !ids.has(t.id)); commit('Removed'); });
+    else toast(r.dup ? `You're up to date. All ${r.dup} payments were already imported` : r.bad ? "Couldn't read that file. Check the automation's Text action" : 'That file is empty');
+  };
+  rd.onerror = () => toast("Couldn't open that file");
+  rd.readAsText(file);
+}
 function download(name, text, type) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name;

@@ -392,6 +392,46 @@ function topCategories(kind = 'expense', n = 6) {
   return cats.sort((a, b) => (cnt[b.id] || 0) - (cnt[a.id] || 0)).slice(0, n);
 }
 
+/* ===== Apple Pay log (written by an iOS Shortcuts "Wallet" automation) =====
+   Each line: DATE | AMOUNT | MERCHANT [| CARD]   (also accepts ; or tab separators) */
+function parseWalletDate(s) {
+  s = String(s || '').trim();
+  const iso = s.match(/^(\d{4}-\d{2}-\d{2})/); if (iso && isValidDate(iso[1])) return iso[1];
+  if (/^\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}/.test(s)) { const f = parseDateFlexible(s, 'mdy'); if (f) return f; }
+  const MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+  let m = s.match(/^([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})/), r;
+  if (m && MON[m[1].slice(0, 3).toLowerCase()]) { r = `${m[3]}-${pad(MON[m[1].slice(0, 3).toLowerCase()])}-${pad(+m[2])}`; if (isValidDate(r)) return r; }
+  m = s.match(/^(\d{1,2})\s+([A-Za-z]{3,9})\.?,?\s+(\d{4})/);
+  if (m && MON[m[2].slice(0, 3).toLowerCase()]) { r = `${m[3]}-${pad(MON[m[2].slice(0, 3).toLowerCase()])}-${pad(+m[1])}`; if (isValidDate(r)) return r; }
+  const d = new Date(s.replace(/\s+at\s+/i, ' ').replace(/ /g, ' ')); if (!isNaN(d)) return ymd(d);
+  return null;
+}
+function importWalletText(text, accountId) {
+  const sp = S(); sp.walletSeen = sp.walletSeen || [];
+  const seen = new Set(sp.walletSeen);
+  let added = 0, dup = 0, bad = 0; const addedTx = [];
+  for (const raw of String(text).replace(/^﻿/, '').split(/\r?\n/)) {
+    const line = raw.trim(); if (!line) continue;
+    const parts = line.split(/\s*[|;\t]\s*/);
+    if (parts.length < 2) { bad++; continue; }
+    const key = line.toLowerCase();
+    if (seen.has(key)) { dup++; continue; }
+    const amount = Math.abs(parseAmount(parts[1]));
+    if (!amount) { bad++; continue; }
+    const date = parseWalletDate(parts[0]) || today();
+    const note = (parts[2] || 'Apple Pay').trim().slice(0, 120);
+    const card = (parts[3] || '').trim().toLowerCase();
+    const c = categoryForNote(note, 'expense') || (noteSuggestions(note, 'expense')[0] ? cat(noteSuggestions(note, 'expense')[0].categoryId) : null)
+      || sp.categories.find(x => x.kind === 'expense' && /^other/i.test(x.name)) || sp.categories.find(x => x.kind === 'expense');
+    const a = (card && sp.accounts.find(x => !x.archived && (card.includes(x.name.toLowerCase()) || x.name.toLowerCase().includes(card)))) || acct(accountId) || acct(defaultAccount());
+    const t = { id: uid(), created: Date.now() + added, date, amount: round2(amount), kind: 'expense', categoryId: c ? c.id : null, accountId: a.id, toAccountId: null, note, tags: ['apple-pay'], planned: false };
+    sp.transactions.push(t); addedTx.push(t); seen.add(key); sp.walletSeen.push(key); added++;
+  }
+  if (sp.walletSeen.length > 5000) sp.walletSeen = sp.walletSeen.slice(-5000);
+  sp.walletLastSync = Date.now();
+  return { added, dup, bad, addedTx };
+}
+
 /* ===== CSV ===== */
 function parseCSV(text) {
   const rows = []; let row = [], f = '', q = false;
