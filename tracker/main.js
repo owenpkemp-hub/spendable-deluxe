@@ -8,16 +8,30 @@ function applyTheme() {
 }
 
 /* ===== Actions (event delegation) ===== */
+function refreshTop() { const top = sheetStack[sheetStack.length - 1]; if (top && top.refresh) top.refresh(); }
 const ACTIONS = {
   tab(el) { ui.tab = el.dataset.tab; if (ui.tab !== 'activity') { ui.selecting = false; ui.selected.clear(); } render(); window.scrollTo(0, 0); if (el.dataset.focus) setTimeout(() => $('#search') && $('#search').focus(), 30); },
   'new-tx'(el) { openTxSheet({ cat: el.dataset.cat, kind: el.dataset.kind }); },
   'edit-tx'(el) { const sw = el.closest('.swipe'); if (sw && sw.dataset.justSwiped) return; if (sw && +$('.front', sw).dataset.off) { $('.front', sw).style.transform = ''; $('.front', sw).dataset.off = 0; return; } openTxSheet({ id: el.dataset.id }); },
   'delete-tx'(el) { deleteTx([el.dataset.id]); },
   process(el) {
-    if (el.dataset.src === 'rec') { const r = S().recurring.find(x => x.id === el.dataset.id); processRecurringNow(el.dataset.id); commit(`Processed ${r ? r.name : ''}`); }
-    else processPlanned(el.dataset.id);
-    const top = sheetStack[sheetStack.length - 1]; if (top && top.refresh) top.refresh();
+    const id = el.dataset.id;
+    if (el.dataset.src === 'rec') {
+      const r = S().recurring.find(x => x.id === id); if (!r) return;
+      const prev = { next: r.next, active: r.active };
+      processRecurringNow(id);
+      const added = S().transactions[S().transactions.length - 1];
+      save(); render();
+      toast(`${r.kind === 'income' ? 'Received' : 'Paid'}: ${r.name}`, 'Undo', () => { S().transactions = S().transactions.filter(t => t !== added); Object.assign(r, prev); commit(); refreshTop(); });
+    } else {
+      const t = S().transactions.find(x => x.id === id); if (!t) return;
+      const prev = { planned: t.planned, date: t.date };
+      processPlanned(id);
+      toast(`${t.kind === 'income' ? 'Received' : 'Paid'}: ${t.note || catName(t.categoryId)}`, 'Undo', () => { Object.assign(t, prev); commit(); refreshTop(); });
+    }
+    refreshTop();
   },
+  'edit-up'(el) { if (el.dataset.src === 'rec') openRecSheet(el.dataset.id); else openTxSheet({ id: el.dataset.id }); },
   'hero-math'() { ui.showHeroMath = !ui.showHeroMath; render(); },
   calendar() { openCalendar(); },
   settings() { openSettings(); },
@@ -52,13 +66,13 @@ const ACTIONS = {
         if (freq === 'month') sp.periodStart = Math.min(28, parseD(next).getDate());
       }
     } else sp.income.expected = Math.abs(parseAmount($('#ob-exp').value)) || 0;
-    processRecurring(); save(); render();
+    processRecurring(); save(); render(); window.scrollTo(0, 0);
     toast('All set. Tap + to log a transaction');
   },
   'backup-now'() { SETTINGS.backup(); },
   'backup-later'() { DB.backupSnooze = Date.now(); save(); render(); },
   'ios-tip'() { SETTINGS.install(); },
-  'ob-sample'() { loadSample(); save(); render(); toast('Sample data loaded. Erase it any time in Settings'); }
+  'ob-sample'() { loadSample(); save(); render(); window.scrollTo(0, 0); toast('Sample data loaded. Erase it any time in Settings'); }
 };
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
@@ -209,5 +223,14 @@ document.addEventListener('visibilitychange', () => {
 });
 // day rollover while open
 let lastDay = today(); setInterval(() => { if (today() !== lastDay) { lastDay = today(); if (S()) { processRecurring(); save(); if (!sheetStack.length) render(); } } }, 60000);
+// tuck the + button away while scrolling down so it never covers amounts; bring it back on scroll up / at the end
+let lastY = 0;
+window.addEventListener('scroll', () => {
+  if (document.body.classList.contains('sheet-open')) return;
+  const y = window.scrollY, atEnd = y + innerHeight >= document.documentElement.scrollHeight - 40;
+  if (y > lastY + 6 && y > 60 && !atEnd) $('#fab').classList.add('hide');
+  else if (y < lastY - 6 || y <= 60 || atEnd) $('#fab').classList.remove('hide');
+  lastY = y;
+}, { passive: true });
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); window.deferredInstall = e; });
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => { });

@@ -4,20 +4,20 @@ const ui = { tab: 'home', filter: 'all', search: '', selecting: false, selected:
 const ICONS = {
   home: '<svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>',
   activity: '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>',
-  budget: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg>',
+  budget: '<svg viewBox="0 0 24 24"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>',
   insights: '<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
   accounts: '<svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>',
   gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
   cal: '<svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>'
 };
-const TABS = [['home', 'Home'], ['activity', 'Activity'], null, ['budget', 'Budget'], ['insights', 'Insights']];
+const TABS = [['home', 'Home'], ['activity', 'Activity'], ['budget', 'Budget'], ['insights', 'Insights'], ['accounts', 'Accounts']];
 
 function render() {
   if (!S()) { renderOnboarding(); return; }
   document.body.classList.remove('onboarding');
   $('#fab').style.display = '';
-  $('#tabs').innerHTML = `<div class="inner">${[...TABS, ['accounts', 'Accounts']].map(t => t ? `<button class="${ui.tab === t[0] ? 'on' : ''}" data-act="tab" data-tab="${t[0]}">${ICONS[t[0]]}${t[1]}</button>` : '<span class="spacer"></span>').join('')}</div>`;
+  $('#tabs').innerHTML = `<div class="inner">${TABS.map(t => `<button class="${ui.tab === t[0] ? 'on' : ''}" data-act="tab" data-tab="${t[0]}" ${ui.tab === t[0] ? 'aria-current="page"' : ''}>${ICONS[t[0]]}${t[1]}</button>`).join('')}</div>`;
   const titles = { home: S().name, activity: 'Activity', budget: 'Budget', insights: 'Insights', accounts: 'Accounts' };
   const sub = { home: fmtDate(today(), { weekday: 'long', month: 'long', day: 'numeric' }) };
   $('#top').innerHTML = `<div class="grow"><div class="sub">${esc(sub[ui.tab] || S().name)}</div><h1 class="ellipsis">${esc(titles[ui.tab])}</h1></div>
@@ -27,6 +27,7 @@ function render() {
   v.innerHTML = VIEWS[ui.tab]();
   attachInspect(v);
   if (ui.tab === 'activity') bindSwipes(v);
+  document.body.classList.toggle('selecting', ui.selecting && ui.tab === 'activity');
 }
 
 /* ===== Home ===== */
@@ -35,22 +36,21 @@ function heroHTML() {
   const neg = s.safe < 0;
   const total = Math.max(1, s.cash);
   const w = v => Math.max(0, Math.min(100, v / total * 100)).toFixed(1);
-  const payLabel = s.pay.source === 'payday' ? `until payday · ${fmtDate(s.pay.date, { weekday: 'short', month: 'short', day: 'numeric' })}` : `left in this budget period`;
-  return `<section class="hero ${neg ? 'negative' : ''}" data-act="hero-math">
-    <div class="label">Safe to spend</div>
+  const toPayday = s.pay.source === 'payday';
+  const stat = (k, v) => `<div class="stat"><div class="k">${k}</div><div class="v num">${fmt(v, null, { whole: true })}</div></div>`;
+  return `<section class="hero ${neg ? 'negative' : ''}" data-act="hero-math" role="button" aria-expanded="${ui.showHeroMath}" aria-label="Safe to spend, tap for details">
+    <div class="label"><span>Safe to spend</span><span class="info">${ui.showHeroMath ? '×' : 'i'}</span></div>
     <div class="big num">${fmt(s.safe)}</div>
-    <div class="per num">${neg ? 'Bills and savings are more than your cash' : `${fmt(Math.max(0, s.perDay))} a day · ${s.days} day${s.days === 1 ? '' : 's'} ${payLabel}`}</div>
-    <div class="bar" title="Cash split"><i style="width:${w(s.bills)}%;background:rgba(255,255,255,.55)"></i><i style="width:${w(s.savings)}%;background:rgba(255,255,255,.32)"></i></div>
-    <div class="meta">
-      <span class="pill num">💵 Cash ${fmt(s.cash, null, { whole: true })}</span>
-      <span class="pill num">🧾 Bills ${fmt(s.bills, null, { whole: true })}</span>
-      <span class="pill num">🐷 Savings ${fmt(s.savings, null, { whole: true })}</span>
-    </div>
-    ${ui.showHeroMath ? `<div class="small" style="margin-top:12px;opacity:.95;line-height:1.6">
-      Cash in checking, cash &amp; cards <b class="num">${fmt(s.cash)}</b><br>
-      − Bills &amp; subscriptions due before ${s.pay.source === 'payday' ? 'payday' : 'period end'} <b class="num">${fmt(s.bills)}</b><br>
-      − Savings still to set aside <b class="num">${fmt(s.savings)}</b><br>
-      = Safe to spend <b class="num">${fmt(s.safe)}</b> ÷ ${s.days} days</div>` : ''}
+    ${neg ? `<div class="per">Bills and savings are more than your cash</div>`
+      : `<div class="per num">${fmt(Math.max(0, s.perDay))} a day for ${s.days} day${s.days === 1 ? '' : 's'}</div>
+         <div class="per2">${toPayday ? `Next payday ${fmtDate(s.pay.date, { weekday: 'short', month: 'short', day: 'numeric' })}` : `Until this budget period ends ${fmtDate(addDays(s.pay.date, -1))}`}</div>`}
+    <div class="bar" aria-hidden="true"><i style="width:${w(s.bills)}%;background:rgba(255,255,255,.55)"></i><i style="width:${w(s.savings)}%;background:rgba(255,255,255,.32)"></i></div>
+    <div class="meta">${stat('Cash', s.cash)}${stat('Bills due', s.bills)}${stat('Savings', s.savings)}</div>
+    ${ui.showHeroMath ? `<div class="math num">
+      <div><span>Cash in checking, cash &amp; cards</span><b>${fmt(s.cash)}</b></div>
+      <div><span>− Bills due before ${toPayday ? 'payday' : 'period end'}</span><b>${fmt(s.bills)}</b></div>
+      <div><span>− Savings to set aside</span><b>${fmt(s.savings)}</b></div>
+      <div class="tot"><span>Safe to spend ÷ ${s.days} days</span><b>${fmt(Math.max(0, s.perDay))}/day</b></div></div>` : ''}
   </section>`;
 }
 const VIEWS = {};
@@ -73,12 +73,12 @@ VIEWS.home = () => {
   }
   const daysSinceBackup = DB.lastBackup ? (Date.now() - DB.lastBackup) / 864e5 : Infinity;
   const snoozed = DB.backupSnooze && (Date.now() - DB.backupSnooze) / 864e5 < 14;
-  const backupCard = sp.transactions.length >= 15 && daysSinceBackup > 30 && (Date.now() - (DB.installedAt || 0)) / 864e5 > 14 && !snoozed ? `<div class="card row"><div class="emoji">💾</div><div class="grow"><div class="t">Back up your data</div><div class="s">${DB.lastBackup ? `Last backup ${Math.floor(daysSinceBackup)} days ago` : 'Save a copy in Files or iCloud Drive in case this device is lost'}</div></div><div class="right"><button class="mini-btn" data-act="backup-now">Back up</button><br><button class="mini-btn" style="background:none;color:var(--muted)" data-act="backup-later">Later</button></div></div>` : '';
+  const backupCard = sp.transactions.length >= 15 && daysSinceBackup > 30 && (Date.now() - (DB.installedAt || 0)) / 864e5 > 14 && !snoozed ? `<div class="card row"><div class="emoji">💾</div><div class="grow"><div class="t">Back up your data</div><div class="s">${DB.lastBackup ? `Last backup ${Math.floor(daysSinceBackup)} days ago` : 'Save a copy in Files or iCloud Drive in case this device is lost'}</div></div><button class="mini-btn" data-act="backup-now">Back up</button><button class="icon-btn" style="width:30px;height:30px;box-shadow:none;background:var(--card2);font-size:13px" data-act="backup-later" aria-label="Remind me later">✕</button></div>` : '';
   const iosTip = isIOS() && !isStandalone() ? `<div class="card row"><div class="emoji">📲</div><div class="grow"><div class="t">Add to Home Screen</div><div class="s">Use it from the icon so your data stays in one place</div></div><button class="mini-btn" data-act="ios-tip">How</button></div>` : '';
   return `${iosTip}${heroHTML()}${backupCard}
   <div class="kpis">
     <div class="kpi"><div class="k">Left today</div><div class="v num ${s.todayLeft < 0 ? 'neg' : ''}">${fmt(s.todayLeft, null, { whole: Math.abs(s.todayLeft) >= 100 })}</div></div>
-    <div class="kpi"><div class="k">Spent this period</div><div class="v num">${fmt(tot.expense, null, { whole: true })}</div></div>
+    <div class="kpi"><div class="k">Spent</div><div class="v num">${fmt(tot.expense, null, { whole: true })}</div></div>
     <div class="kpi"><div class="k">${budgeted ? 'Budget left' : 'Income'}</div><div class="v num ${budgeted && budgeted - tot.expense < 0 ? 'neg' : ''}">${fmt(budgeted ? budgeted - tot.expense : tot.income, null, { whole: true })}</div></div>
   </div>
   <div class="sec-h">Quick add</div>
@@ -94,9 +94,10 @@ function upItemHTML(u) {
   const when = d < 0 ? `<span class="badge neg">Overdue</span>` : d === 0 ? `<span class="badge warn">Today</span>` : `${relDay(u.date)}`;
   const em = u.kind === 'transfer' ? '🔁' : catEmoji(u.categoryId);
   const cls = u.kind === 'income' ? 'pos' : '';
-  return `<li class="item"><div class="emoji">${em}</div><div class="grow"><div class="t ellipsis">${esc(u.name)}</div><div class="s">${when} · ${u.src === 'rec' ? 'Recurring' : 'Planned'}${u.kind === 'transfer' ? ' · to ' + esc((acct(u.toAccountId) || {}).name || '') : ''}</div></div>
-    <div class="right"><div class="amt num ${cls}">${u.kind === 'income' ? '+' : u.kind === 'expense' ? '−' : ''}${fmt(u.amount, acctCur(u.accountId))}</div>
-    ${u.first ? `<button class="mini-btn" style="margin-top:4px" data-act="process" data-src="${u.src}" data-id="${u.id}">Process now</button>` : ''}</div></li>`;
+  const doneLabel = u.kind === 'income' ? 'Mark as received' : 'Mark as paid';
+  return `<li class="item tap" data-act="edit-up" data-src="${u.src}" data-id="${u.id}"><div class="emoji">${em}</div><div class="grow"><div class="t ellipsis">${esc(u.name)}</div><div class="s ellipsis">${when} · ${u.src === 'rec' ? 'Recurring' : 'Planned'}${u.kind === 'transfer' ? ' · to ' + esc((acct(u.toAccountId) || {}).name || '') : ''}</div></div>
+    <div class="amt-col"><div class="amt num ${cls}">${u.kind === 'income' ? '+' : u.kind === 'expense' ? '−' : ''}${fmt(u.amount, acctCur(u.accountId))}</div></div>
+    ${u.first ? `<button class="done-btn" data-act="process" data-src="${u.src}" data-id="${u.id}" aria-label="${doneLabel}" title="${doneLabel}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>` : '<span style="width:34px;flex:none"></span>'}</li>`;
 }
 const txSort = (a, b) => b.date.localeCompare(a.date) || (b.created || 0) - (a.created || 0);
 function txItemHTML(t, opts = {}) {
@@ -137,7 +138,7 @@ VIEWS.activity = () => {
   const filters = [['all', 'All'], ['expense', 'Expenses'], ['income', 'Income'], ['transfer', 'Transfers'], ['planned', 'Planned']];
   const extra = ui.filter.startsWith('cat:') ? [[ui.filter, catEmoji(ui.filter.slice(4)) + ' ' + catName(ui.filter.slice(4))]] : ui.filter.startsWith('acc:') ? [[ui.filter, (acct(ui.filter.slice(4)) || {}).name]] : [];
   const totOut = sum(list.filter(t => t.kind === 'expense' && !t.planned), txBase), totIn = sum(list.filter(t => t.kind === 'income' && !t.planned), txBase);
-  return `<div class="row" style="margin:6px 0 10px"><input class="input grow" id="search" type="search" placeholder="Search notes, categories, #tags, amounts" value="${esc(ui.search)}" autocomplete="off">
+  return `<div class="search-row"><input class="input grow" id="search" type="search" enterkeyhint="search" placeholder="Search" aria-label="Search notes, categories, tags or amounts" value="${esc(ui.search)}" autocomplete="off">
     <button class="mini-btn ${ui.selecting ? 'neg' : ''}" data-act="select-mode">${ui.selecting ? 'Done' : 'Select'}</button></div>
   <div class="chips">${[...extra, ...filters].map(([k, l]) => `<button class="chip ${ui.filter === k ? 'on' : ''}" data-act="filter" data-f="${esc(k)}">${esc(l)}</button>`).join('')}</div>
   ${ui.selecting ? `<div class="card row"><span class="grow"><b>${ui.selected.size}</b> selected</span><button class="mini-btn" data-act="select-all">Select all</button><button class="mini-btn neg" data-act="bulk-delete" ${ui.selected.size ? '' : 'disabled'}>Delete</button></div>` : ''}
@@ -371,7 +372,7 @@ function renderOnboarding() {
   const cur = guessCurrency();
   $('#view').innerHTML = `<div class="onboard"><img src="icons/icon-192.png" alt=""><h2>Know what's safe to spend</h2>
     <p class="muted">A private budget tracker. No bank login, no sign-up. Your data stays on this device.</p>
-    ${isIOS() && !isStandalone() ? `<div class="card small" style="text-align:left">📲 <b>On iPhone, add the app to your Home Screen before setting it up.</b> Tap Share <span aria-hidden="true">⎋</span>, then <b>Add to Home Screen</b>, and open Spendable from its icon. The Home Screen app keeps its own data, separate from Safari, so anything you enter here in Safari won't show up there.</div>` : ''}</div>
+    ${isIOS() && !isStandalone() ? `<div class="card small" style="text-align:left">📲 <b>On iPhone, add the app to your Home Screen before setting it up.</b> Tap Share <svg class="share-ico" viewBox="0 0 24 24" aria-label="Share"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>, then <b>Add to Home Screen</b>, and open Spendable from its icon. The Home Screen app keeps its own data, separate from Safari, so anything you enter here in Safari won't show up there.</div>` : ''}</div>
     <div class="card">
       <label class="field"><span>Currency</span><select class="input" id="ob-cur">${CURRENCIES.map(c => `<option value="${c.code}" ${c.code === cur ? 'selected' : ''}>${c.code} — ${esc(c.name)}</option>`).join('')}</select></label>
       <label class="field"><span>Checking account balance right now</span><input class="input num" id="ob-bal" inputmode="decimal" placeholder="0.00"></label>

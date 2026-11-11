@@ -7,14 +7,34 @@ function openSheet(title, html, { left = 'Cancel', right = null, onRight = null,
   sheetStack.forEach(s => s.el.style.display = 'none');
   const el = document.createElement('div');
   el.className = 'sheet'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', title);
-  el.innerHTML = `<div class="grab"></div><div class="sheet-h"><button data-act="close-sheet">${sheetStack.length && left === 'Cancel' ? '‹ Back' : esc(left)}</button><h3>${esc(title)}</h3><button class="r" data-role="right">${right ? esc(right) : ''}</button></div><div class="sheet-b">${html}</div>`;
+  el.innerHTML = `<div class="drag-zone"><div class="grab"></div><div class="sheet-h"><button data-act="close-sheet">${sheetStack.length && left === 'Cancel' ? '‹ Back' : esc(left)}</button><h3>${esc(title)}</h3><button class="r" data-role="right" ${right ? '' : 'tabindex="-1" aria-hidden="true"'}>${right ? esc(right) : ''}</button></div></div><div class="sheet-b">${html}</div>`;
   root.appendChild(el);
   const entry = { el, onClose };
   sheetStack.push(entry);
   if (right && onRight) $('[data-role=right]', el).onclick = () => onRight(el);
   if (onMount) onMount(el);
-  document.body.style.overflow = 'hidden';
+  lockScroll(true);
+  bindSheetDrag(el);
   return el;
+}
+/* Keep the page behind a sheet from scrolling (iOS ignores overflow:hidden on body) */
+let savedScroll = 0;
+function lockScroll(on) {
+  const b = document.body;
+  if (on && !b.classList.contains('sheet-open')) { savedScroll = window.scrollY; b.style.top = `-${savedScroll}px`; b.classList.add('sheet-open'); }
+  else if (!on && b.classList.contains('sheet-open')) { b.classList.remove('sheet-open'); b.style.top = ''; window.scrollTo(0, savedScroll); }
+}
+/* Drag the handle/header down to dismiss, like a native sheet */
+function bindSheetDrag(el) {
+  const zone = $('.drag-zone', el); let y0 = null, dy = 0;
+  zone.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; y0 = e.clientY; dy = 0; el.classList.add('dragging'); zone.setPointerCapture(e.pointerId); });
+  zone.addEventListener('pointermove', e => { if (y0 == null) return; dy = Math.max(0, e.clientY - y0); el.style.transform = `translateY(${dy}px)`; });
+  const end = () => {
+    if (y0 == null) return; y0 = null; el.classList.remove('dragging');
+    if (dy > 90) { el.style.transform = 'translateY(100%)'; setTimeout(() => { if (sheetStack.length && sheetStack[sheetStack.length - 1].el === el) closeSheet(); }, 180); }
+    else el.style.transform = '';
+  };
+  zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
 }
 function closeSheet(all = false) {
   do {
@@ -23,7 +43,7 @@ function closeSheet(all = false) {
   } while (all && sheetStack.length);
   const top = sheetStack[sheetStack.length - 1];
   if (top) { top.el.style.display = ''; if (top.refresh) top.refresh(); }
-  else { $('#sheets').innerHTML = ''; document.body.style.overflow = ''; }
+  else { $('#sheets').innerHTML = ''; lockScroll(false); }
 }
 function refreshTopSheet(builder) { const s = sheetStack[sheetStack.length - 1]; if (s) $('.sheet-b', s.el).innerHTML = builder(); }
 
@@ -66,8 +86,8 @@ function openTxSheet(opts = {}) {
         ${!editing ? `<label class="field"><span>Repeat</span><select class="input" id="tx-rep">${[['none', 'Never'], ['week:1', 'Every week'], ['week:2', 'Every 2 weeks'], ['month:1', 'Every month'], ['month:3', 'Every 3 months'], ['year:1', 'Every year']].map(([v, l]) => `<option value="${v}" ${st.repeat === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>` : ''}
         <label class="toggle"><input type="checkbox" id="tx-plan" ${st.planned ? 'checked' : ''}><span>Planned — doesn't touch balances until processed${st.date > today() ? '' : ''}</span></label>`
       : `<button class="more-toggle" data-more="1">Date, account, tags &amp; repeat ›</button>`}
-      <button class="btn" data-save="1">${editing ? 'Save changes' : 'Add ' + st.kind}</button>
-      ${editing ? `${editing.planned ? '<button class="btn ghost" data-proc="1">Process now</button>' : ''}<button class="btn ghost" data-dup="1">Duplicate</button><button class="btn danger" data-del="1">Delete</button>` : ''}`;
+      ${editing ? `<div class="two" style="margin-top:4px">${editing.planned ? '<button class="btn ghost" data-proc="1">Mark as paid</button>' : '<button class="btn ghost" data-dup="1">Duplicate</button>'}<button class="btn danger" data-del="1">Delete</button></div>` : ''}
+      <div class="sheet-foot"><button class="btn" data-save="1">${editing ? 'Save changes' : 'Add ' + st.kind}</button></div>`;
   };
   const read = el => {
     const v = id => { const x = $('#' + id, el); return x ? x.value : undefined; };
@@ -151,7 +171,7 @@ function openRecSheet(id, preset = {}) {
     const cats = S().categories.filter(c => c.kind === st.kind && !c.archived);
     if (st.kind !== 'transfer' && !st.categoryId && cats[0]) st.categoryId = (cats.find(c => /subscri|rent|bill/i.test(c.name + c.group)) || cats[0]).id;
     if (st.kind === 'transfer' && !st.toAccountId) st.toAccountId = (S().accounts.find(a => a.type === 'savings' && a.id !== st.accountId) || S().accounts.find(a => a.id !== st.accountId) || {}).id;
-    return `<div class="seg" style="margin-bottom:12px">${[['expense', 'Bill / subscription'], ['income', 'Income'], ['transfer', 'Savings / transfer']].map(([k, l]) => `<button data-k="${k}" class="${st.kind === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    return `<div class="seg" style="margin-bottom:12px">${[['expense', 'Bill'], ['income', 'Income'], ['transfer', 'Transfer']].map(([k, l]) => `<button data-k="${k}" class="${st.kind === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <label class="field"><span>Name</span><input class="input" id="r-name" value="${esc(st.name)}" placeholder="${st.kind === 'income' ? 'Paycheck' : st.kind === 'transfer' ? 'Monthly savings' : 'Netflix, Rent, Gym…'}"></label>
     <label class="field"><span>Amount</span><input class="input num" id="r-amt" inputmode="decimal" value="${esc(st.amount)}" placeholder="0.00"></label>
     ${st.kind !== 'transfer' ? `<label class="field"><span>Category</span><select class="input" id="r-cat">${cats.map(c => `<option value="${c.id}" ${c.id === st.categoryId ? 'selected' : ''}>${c.emoji} ${esc(c.name)}</option>`).join('')}</select></label>
@@ -162,8 +182,8 @@ function openRecSheet(id, preset = {}) {
     <label class="toggle"><input type="checkbox" id="r-remind" ${st.remind ? 'checked' : ''}><span>Remind me ${S().remindDays || 1} day${(S().remindDays || 1) > 1 ? 's' : ''} before</span></label>
     ${r ? `<label class="toggle"><input type="checkbox" id="r-active" ${st.active ? 'checked' : ''}><span>Active</span></label>` : ''}
     <div class="small muted" style="margin:0 2px 10px">Logged automatically on each date, and counted in safe-to-spend before it happens.</div>
-    <button class="btn" data-save="1">${r ? 'Save' : 'Add recurring'}</button>
-    ${r ? `<button class="btn ghost" data-proc="1">Process next one now</button><button class="btn danger" data-del="1">Delete</button>` : ''}`;
+    ${r ? `<div class="two"><button class="btn ghost" data-proc="1">${st.kind === 'income' ? 'Mark received' : 'Mark next paid'}</button><button class="btn danger" data-del="1">Delete</button></div>` : ''}
+    <div class="sheet-foot"><button class="btn" data-save="1">${r ? 'Save' : 'Add recurring'}</button></div>`;
   };
   const read = el => {
     const v = id => { const x = $('#' + id, el); return x ? x.value : undefined; };
@@ -189,7 +209,7 @@ function openRecSheet(id, preset = {}) {
           const n = processRecurring();
           closeSheet(); commit(n ? `Saved · logged ${n} due payment${n > 1 ? 's' : ''}` : 'Saved');
         }
-        else if (b.dataset.proc) { processRecurringNow(r.id); closeSheet(); commit(`Processed ${r.name}`); }
+        else if (b.dataset.proc) { processRecurringNow(r.id); closeSheet(); commit(`${r.kind === "income" ? "Received" : "Paid"}: ${r.name}`); }
         else if (b.dataset.del) { if (!confirm(`Delete "${r.name}"? Past transactions are kept.`)) return; S().recurring = S().recurring.filter(x => x !== r); closeSheet(); commit('Deleted'); }
       });
       el.addEventListener('change', e => { if (e.target.id === 'r-int' || e.target.id === 'r-acc') { read(el); refreshTopSheet(body); } });
@@ -202,10 +222,10 @@ function openRecList() {
     const monthly = r => { const f = { day: 30.44, week: 4.345, month: 1, year: 1 / 12 }[r.freq] / (r.interval || 1); return toBase(r.amount, acctCur(r.accountId)) * f; };
     const outM = sum(rs.filter(r => r.active && r.kind === 'expense'), monthly), inM = sum(rs.filter(r => r.active && r.kind === 'income'), monthly);
     return `<div class="kpis" style="grid-template-columns:1fr 1fr"><div class="kpi"><div class="k">Bills per month</div><div class="v num">${fmt(outM)}</div></div><div class="kpi"><div class="k">Recurring income / mo</div><div class="v num pos">${fmt(inM)}</div></div></div>
-    <div class="card flush">${rs.length ? `<ul class="list">${rs.map(r => `<li class="item tap" data-rec="${r.id}"><div class="emoji">${r.kind === 'transfer' ? '🔁' : catEmoji(r.categoryId)}</div><div class="grow"><div class="t ellipsis ${r.active ? '' : 'muted'}">${esc(r.name)}</div><div class="s">${freqText(r)} · ${r.active ? 'next ' + relDay(r.next) : 'paused'}</div></div><div class="amt num ${r.kind === 'income' ? 'pos' : ''}">${fmt(r.amount, acctCur(r.accountId))}</div></li>`).join('')}</ul>` : '<div class="empty small">No recurring items yet.</div>'}</div>
+    <div class="card flush">${rs.length ? `<ul class="list">${rs.map(r => `<li class="item tap" data-rec="${r.id}"><div class="emoji">${r.kind === 'transfer' ? '🔁' : catEmoji(r.categoryId)}</div><div class="grow"><div class="t ellipsis ${r.active ? '' : 'muted'}">${esc(r.name)}</div><div class="s ellipsis">${freqText(r)} · ${r.active ? 'next ' + relDay(r.next) : 'paused'}</div></div><div class="amt num ${r.kind === 'income' ? 'pos' : ''}">${fmt(r.amount, acctCur(r.accountId))}</div></li>`).join('')}</ul>` : '<div class="empty small">No recurring items yet.</div>'}</div>
     <button class="btn" data-new="1">+ Add recurring</button>`;
   };
-  openSheet('Recurring & subscriptions', body(), {
+  openSheet('Recurring', body(), {
     onMount: el => el.addEventListener('click', e => {
       const li = e.target.closest('[data-rec]'); if (li) return openRecSheet(li.dataset.rec);
       if (e.target.closest('[data-new]')) openRecSheet(null);
@@ -375,7 +395,7 @@ function settingsHTML() {
       ${item('income', '💼', 'Income planning', sp.income.mode === 'irregular' ? `Irregular · expecting ${fmt(+sp.income.expected || 0)}/month` : 'Regular paycheck · safe-to-spend runs to payday')}
       ${item('period', '📅', 'Budget period', `Starts on day ${sp.periodStart} of each month`)}
       ${item('savings', '🐷', 'Savings goal', sp.savingsGoal ? `${fmt(sp.savingsGoal)} set aside each period` : 'Not set')}
-      ${item('recurring', '↻', 'Recurring & subscriptions', `${sp.recurring.filter(r => r.active).length} active`)}
+      ${item('recurring', '🔄', 'Recurring & subscriptions', `${sp.recurring.filter(r => r.active).length} active`)}
       ${item('categories', '🏷️', 'Categories', `${sp.categories.length} categories`)}
       ${item('reminders', '🔔', 'Payment reminders', sp.reminders ? `On · ${sp.remindDays} day${sp.remindDays > 1 ? 's' : ''} before` : 'Off')}</ul></div>
     <div class="sec-h">Logging</div><div class="card flush set-list"><ul class="list">
