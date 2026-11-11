@@ -406,14 +406,27 @@ function parseWalletDate(s) {
   const d = new Date(s.replace(/\s+at\s+/i, ' ').replace(/ /g, ' ')); if (!isNaN(d)) return ymd(d);
   return null;
 }
+/* Fallback for lines written without separators, e.g. "Nov 12, 2026 at 1:04 PM$5.25Corner Café" */
+function splitLooseWalletLine(line) {
+  const l = line.replace(/[  ]/g, ' ');
+  const dm = l.match(/^(\d{4}-\d{2}-\d{2}T[\d:.]+(?:Z|[+-]\d{2}:?\d{2})?|[A-Za-z]{3,9}\.? \d{1,2}, \d{4}(?:,? (?:at )?\d{1,2}:\d{2}(?::\d{2})?(?: ?[AP]M)?)?|\d{1,2} [A-Za-z]{3,9}\.? \d{4}(?:,? (?:at )?\d{1,2}:\d{2}(?: ?[AP]M)?)?|\d{1,2}\/\d{1,2}\/\d{2,4}(?:,? \d{1,2}:\d{2}(?: ?[AP]M)?)?)/i);
+  if (!dm) return null;
+  let rest = l.slice(dm[0].length).trim();
+  // amount: optional currency symbol/code, digits with optional thousands groups and 2 decimals
+  const am = rest.match(/^([^\d\s-]{0,4}\s?-?)(\d{1,3}(?:,\d{3})+\.\d{2}|\d{1,3}(?:\.\d{3})+,\d{2}|\d+[.,]\d{2}|\d+)(\s?[A-Z]{3}(?![a-z]))?/);
+  if (!am) return null;
+  const merchant = rest.slice(am[0].length).trim();
+  return [dm[0], am[0], merchant || 'Apple Pay'];
+}
 function importWalletText(text, accountId) {
   const sp = S(); sp.walletSeen = sp.walletSeen || [];
   const seen = new Set(sp.walletSeen);
   let added = 0, dup = 0, bad = 0; const addedTx = [];
   for (const raw of String(text).replace(/^﻿/, '').split(/\r?\n/)) {
     const line = raw.trim(); if (!line) continue;
-    const parts = line.split(/\s*[|;\t]\s*/);
-    if (parts.length < 2) { bad++; continue; }
+    let parts = line.split(/\s*[|;\t]\s*/);
+    if (parts.length < 2) parts = splitLooseWalletLine(line);
+    if (!parts || parts.length < 2) { bad++; continue; }
     const key = line.toLowerCase();
     if (seen.has(key)) { dup++; continue; }
     const amount = Math.abs(parseAmount(parts[1]));
