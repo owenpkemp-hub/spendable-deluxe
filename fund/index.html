@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fuck You Fund</title>
+<meta name="description" content="Track one thing: your walk-away money.">
+<meta name="theme-color" content="#0b0805">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FU Fund">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root {
+  --bg: #0b0805; --card: #17110b; --card2: #211910; --ink: #fbf3e6; --muted: #a8977f; --line: #2c2217;
+  --gold: #ffc23d; --gold2: #ff8a1f; --gold-ink: #1d1203; --gold-soft: #3a2a12;
+  --pos: #7fe0a8; --neg: #ff7b6b; --neg-soft: #3a1b16;
+  --shadow: 0 1px 0 rgba(255,255,255,.03) inset;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f7f2ea; --card: #ffffff; --card2: #f3ece1; --ink: #20160b; --muted: #85735c; --line: #e8dfd1;
+    --gold: #e59a0b; --gold2: #d9620f; --gold-ink: #ffffff; --gold-soft: #fbecd0;
+    --pos: #1f8f55; --neg: #c9412f; --neg-soft: #fbe4e0; --shadow: 0 1px 2px rgba(60,40,10,.06), 0 6px 18px rgba(60,40,10,.06); color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f7f2ea; --card: #ffffff; --card2: #f3ece1; --ink: #20160b; --muted: #85735c; --line: #e8dfd1;
+  --gold: #e59a0b; --gold2: #d9620f; --gold-ink: #ffffff; --gold-soft: #fbecd0;
+  --pos: #1f8f55; --neg: #c9412f; --neg-soft: #fbe4e0; --shadow: 0 1px 2px rgba(60,40,10,.06), 0 6px 18px rgba(60,40,10,.06); color-scheme: light;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font: 15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; -webkit-user-select: none; user-select: none; }
+.num { font-variant-numeric: tabular-nums; }
+#app { max-width: 560px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 8px) 16px calc(40px + env(safe-area-inset-bottom)); }
+header { display: flex; align-items: center; gap: 10px; padding: 10px 0 4px; }
+header h1 { flex: 1; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--card); box-shadow: var(--shadow); display: grid; place-items: center; flex: none; }
+.icon-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.card { background: var(--card); border-radius: 22px; padding: 18px; margin: 12px 0; box-shadow: var(--shadow); }
+.card h2 { margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; }
+.card h2 .link { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--gold); background: none; border: 0; font-weight: 650; padding: 0; }
+.muted { color: var(--muted); } .small { font-size: 13px; } .pos { color: var(--pos); } .neg { color: var(--neg); }
+/* hero */
+.hero { text-align: center; padding: 22px 18px 20px; background: radial-gradient(120% 90% at 50% 0%, var(--gold-soft), var(--card) 70%); }
+.ring-wrap { position: relative; width: 250px; height: 250px; margin: 0 auto; }
+.ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-center .bal { font-size: 40px; font-weight: 800; letter-spacing: -.03em; line-height: 1.05; }
+.ring-center .of { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.ring-center .pct { margin-top: 8px; font-size: 13px; font-weight: 750; background: var(--gold-soft); color: var(--gold); border-radius: 999px; padding: 4px 10px; }
+.freedom { margin-top: 16px; font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+.freedom small { display: block; font-size: 14px; font-weight: 500; color: var(--muted); margin-top: 4px; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.btn { border: 0; border-radius: 16px; padding: 15px; font-weight: 750; font-size: 16px; background: linear-gradient(135deg, var(--gold), var(--gold2)); color: var(--gold-ink); box-shadow: 0 8px 22px color-mix(in srgb, var(--gold2) 30%, transparent); width: 100%; transition: transform .12s, opacity .12s; }
+.btn.ghost { background: var(--card2); color: var(--ink); box-shadow: none; }
+.btn.danger { background: var(--neg-soft); color: var(--neg); box-shadow: none; }
+.btn:active { transform: scale(.97); opacity: .9; }
+.btn:disabled { opacity: .45; }
+/* plan */
+.plan-line { font-size: 17px; font-weight: 650; line-height: 1.4; }
+.plan-line b { color: var(--gold); }
+.bar { position: relative; height: 12px; border-radius: 8px; background: var(--card2); margin: 16px 0 6px; overflow: visible; }
+.bar > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 8px; background: linear-gradient(90deg, var(--gold), var(--gold2)); }
+.bar .mk { position: absolute; top: -4px; width: 2px; height: 20px; background: var(--muted); opacity: .5; }
+.bar .mk span { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--muted); white-space: nowrap; }
+/* milestones */
+.ms { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ms div { background: var(--card2); border-radius: 14px; padding: 10px 6px; text-align: center; font-size: 12px; color: var(--muted); font-weight: 600; }
+.ms div b { display: block; font-size: 18px; color: var(--muted); margin-bottom: 2px; }
+.ms div.on { background: var(--gold-soft); color: var(--gold); }
+.ms div.on b { color: var(--ink); }
+/* chart */
+.seg { display: flex; background: var(--card2); border-radius: 12px; padding: 3px; gap: 2px; margin-top: 10px; }
+.seg button { flex: 1; border: 0; background: none; border-radius: 9px; padding: 7px; font-weight: 650; font-size: 13.5px; color: var(--muted); }
+.seg button.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+:root:not([data-theme="light"]) .seg button.on { background: #3a2c1c; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .seg button.on { background: #fff; } }
+.chart { width: 100%; display: block; touch-action: pan-y; }
+.chart text { fill: var(--muted); font-size: 10px; }
+.readout { font-size: 13px; color: var(--muted); min-height: 40px; }
+.readout b { display: block; font-size: 20px; color: var(--ink); }
+/* history */
+.list { list-style: none; margin: 0; padding: 0; }
+.item { display: flex; align-items: center; gap: 12px; padding: 12px 2px; border-top: 1px solid var(--line); cursor: pointer; }
+.item:first-child { border-top: 0; }
+.item:active { opacity: .7; }
+.dot { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; font-size: 17px; flex: none; background: var(--card2); }
+.grow { flex: 1; min-width: 0; }
+.item .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .s { font-size: 12.5px; color: var(--muted); }
+.amt { font-weight: 700; white-space: nowrap; }
+.empty { text-align: center; color: var(--muted); padding: 18px 8px; }
+/* sheet */
+.backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 40; animation: fade .2s; }
+.sheet { position: fixed; z-index: 41; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 560px; max-height: 92vh; max-height: 92dvh; overflow-y: auto; background: var(--bg); border-radius: 24px 24px 0 0; padding: 0 16px calc(22px + env(safe-area-inset-bottom)); animation: up .26s cubic-bezier(.2,.8,.2,1); overscroll-behavior: contain; }
+.sheet-h { display: flex; align-items: center; position: sticky; top: 0; background: var(--bg); padding: 14px 0 10px; z-index: 2; }
+.sheet-h h3 { flex: 1; margin: 0; text-align: center; font-size: 17px; }
+.sheet-h button { width: 70px; border: 0; background: none; color: var(--gold); font-weight: 650; font-size: 15.5px; text-align: left; padding: 6px 0; }
+.sheet-h .r { text-align: right; }
+@keyframes up { from { transform: translateY(100%); } }
+@keyframes fade { from { opacity: 0; } }
+.amount-in { width: 100%; border: 0; background: none; font-size: 50px; font-weight: 800; text-align: center; letter-spacing: -.03em; outline: none; padding: 6px 0 2px; }
+.amount-in.out { color: var(--neg); } .amount-in.in { color: var(--ink); }
+.chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 6px 0 14px; }
+.chip { border: 0; background: var(--card2); border-radius: 999px; padding: 8px 14px; font-weight: 650; font-size: 14px; }
+.field { display: block; margin: 0 0 12px; }
+.field > span { display: block; font-size: 12.5px; font-weight: 650; color: var(--muted); margin: 0 0 5px 2px; }
+.input { width: 100%; border: 1px solid var(--line); background: var(--card); border-radius: 13px; padding: 12px; outline: none; font-size: 16px; }
+.input:focus { border-color: var(--gold); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hint { font-size: 12.5px; color: var(--muted); margin: -4px 2px 12px; line-height: 1.45; }
+.toggle { display: flex; align-items: center; gap: 10px; padding: 2px 2px 12px; }
+.toggle input { width: 20px; height: 20px; accent-color: var(--gold2); }
+.sec { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 18px 2px 8px; }
+#toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--bg); padding: 11px 16px; border-radius: 16px; font-weight: 650; font-size: 14px; opacity: 0; pointer-events: none; transition: .25s; z-index: 60; width: max-content; max-width: calc(100% - 32px); display: flex; gap: 12px; align-items: center; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+#toast.show { opacity: 1; transform: translateX(-50%); pointer-events: auto; }
+#toast button { border: 0; background: none; color: var(--gold2); font-weight: 800; padding: 0; }
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 70; overflow: hidden; }
+.confetti i { position: absolute; top: -20px; width: 9px; height: 14px; border-radius: 2px; animation: fall 2.4s ease-in forwards; }
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: .8; } }
+.onboard { padding-top: 30px; text-align: center; }
+.onboard img { width: 96px; height: 96px; border-radius: 22px; box-shadow: 0 10px 40px rgba(255,138,31,.25); }
+.onboard h2 { font-size: 28px; margin: 16px 0 6px; letter-spacing: -.02em; }
+.onboard .card { text-align: left; }
+.goalpick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+.goalpick button { border: 1px solid var(--line); background: var(--card); border-radius: 14px; padding: 10px 4px; font-weight: 700; }
+.goalpick button.on { border-color: var(--gold); background: var(--gold-soft); color: var(--gold); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheet-root"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+/* ===== tiny helpers ===== */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseD = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const today = () => ymd(new Date());
+const addDays = (s, n) => { const d = parseD(s); d.setDate(d.getDate() + n); return ymd(d); };
+const addMonths = (s, n, day) => { const d = parseD(s); const t = new Date(d.getFullYear(), d.getMonth() + n, 1); const last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate(); t.setDate(Math.min(day || d.getDate(), last)); return ymd(t); };
+const isValidDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '') && ymd(parseD(s)) === s;
+const round2 = v => Math.round(v * 100) / 100;
+const fmtD = (s, o = { month: 'short', day: 'numeric', year: 'numeric' }) => parseD(s).toLocaleDateString(undefined, o);
+function parseAmount(raw) {
+  let s = String(raw ?? '').trim().replace(/[\s  ']/g, ''); const neg = /^-|^\(/.test(s);
+  s = s.replace(/[^\d.,]/g, ''); if (!s) return NaN;
+  const lc = s.lastIndexOf(','), ld = s.lastIndexOf('.');
+  if (lc > -1 && ld > -1) s = lc > ld ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  else if (lc > -1) s = (s.split(',').length > 2 || s.length - lc - 1 === 3) ? s.replace(/,/g, '') : s.replace(',', '.');
+  const v = parseFloat(s); return isNaN(v) ? NaN : neg ? -v : v;
+}
+const fc = {};
+function money(v, opt = {}) {
+  const k = DB.currency + JSON.stringify(opt);
+  if (!fc[k]) { const o = { style: 'currency', currency: DB.currency }; if (opt.whole) { o.maximumFractionDigits = 0; o.minimumFractionDigits = 0; } if (opt.sign) o.signDisplay = 'exceptZero'; try { fc[k] = new Intl.NumberFormat(undefined, o); } catch (e) { fc[k] = { format: x => '$' + x.toFixed(2) }; } }
+  return fc[k].format(Object.is(v, -0) ? 0 : v);
+}
+const CURRENCIES = (() => { try { return Intl.supportedValuesOf('currency'); } catch (e) { return ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'NZD', 'JPY', 'CHF', 'INR', 'MXN', 'BRL', 'ZAR', 'SGD', 'SEK', 'NOK', 'DKK']; } })();
+function guessCurrency() { try { const r = new Intl.Locale(navigator.language || 'en-US').maximize().region; return ({ US: 'USD', GB: 'GBP', CA: 'CAD', AU: 'AUD', NZ: 'NZD', IN: 'INR', JP: 'JPY', CH: 'CHF', MX: 'MXN', BR: 'BRL', ZA: 'ZAR', SG: 'SGD', SE: 'SEK', NO: 'NOK', DK: 'DKK' })[r] || (['DE', 'FR', 'ES', 'IT', 'NL', 'IE', 'PT', 'BE', 'AT', 'FI', 'GR'].includes(r) ? 'EUR' : 'USD'); } catch (e) { return 'USD'; } }
+
+/* ===== storage: localStorage + IndexedDB mirror ===== */
+const KEY = 'fu-fund-v1';
+let DB = null;
+function blank() { return { v: 1, setup: false, name: 'Fuck You Fund', currency: guessCurrency(), monthly: 0, goalMode: 'months', goalMonths: 6, goalAmount: 0, contrib: { amount: 0, day: 1, auto: false, next: null }, entries: [], celebrated: [], theme: 'auto', range: '1Y', installedAt: Date.now() }; }
+function load() { try { DB = JSON.parse(localStorage.getItem(KEY)); } catch (e) { DB = null; } if (!DB || !Array.isArray(DB.entries)) DB = blank(); }
+let idbTimer = null, pending = null;
+function save() {
+  DB.savedAt = Date.now(); const j = JSON.stringify(DB);
+  try { localStorage.setItem(KEY, j); } catch (e) { }
+  pending = j; clearTimeout(idbTimer); idbTimer = setTimeout(flush, 250);
+}
+function idb() { return new Promise((res, rej) => { if (!('indexedDB' in window)) return rej(); const r = indexedDB.open('fu-fund', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+function flush() { if (pending == null) return; const j = pending; pending = null; idb().then(db => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(j, KEY); tx.oncomplete = () => db.close(); }).catch(() => { }); }
+async function recover() {
+  try {
+    const db = await idb(); const j = await new Promise(r => { const q = db.transaction('kv').objectStore('kv').get(KEY); q.onsuccess = () => r(q.result); q.onerror = () => r(null); }); db.close();
+    if (!j) return false; const d = JSON.parse(j);
+    if (d && Array.isArray(d.entries) && (d.savedAt || 0) > (DB.savedAt || 0) && (d.setup || !DB.setup)) { DB = d; try { localStorage.setItem(KEY, j); } catch (e) { } return true; }
+  } catch (e) { } return false;
+}
+addEventListener('pagehide', flush); document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+
+/* ===== model ===== */
+const balance = (upTo) => round2(DB.entries.reduce((s, e) => (!upTo || e.date <= upTo) ? s + e.amount : s, 0));
+const goal = () => DB.goalMode === 'months' ? (DB.monthly || 0) * (DB.goalMonths || 0) : (DB.goalAmount || 0);
+const monthsOf = v => DB.monthly > 0 ? v / DB.monthly : null;
+function walkAwayDate(months) { const whole = Math.floor(months); const d = addMonths(today(), whole, parseD(today()).getDate()); return addDays(d, Math.round((months - whole) * 30.44)); }
+function monthsText(m) { if (m == null) return ''; if (m < 1) { const d = Math.round(m * 30.44); return `${d} day${d === 1 ? '' : 's'}`; } const r = Math.round(m * 10) / 10; return `${r % 1 ? r.toFixed(1) : r} month${r === 1 ? '' : 's'}`; }
+function avgMonthlyNet() { const since = addDays(today(), -90); const s = DB.entries.filter(e => e.date >= since).reduce((a, e) => a + e.amount, 0); return s / 3; }
+function eta() {
+  const g = goal(), b = balance(); if (!g || b >= g) return null;
+  const rate = DB.contrib.amount > 0 ? DB.contrib.amount : avgMonthlyNet();
+  if (!(rate > 0)) return { none: true };
+  const n = Math.ceil((g - b) / rate);
+  return { months: n, date: addMonths(today(), n), rate, planned: DB.contrib.amount > 0 };
+}
+function milestones() {
+  const g = goal();
+  if (DB.monthly > 0) { const goalM = DB.goalMode === 'months' ? DB.goalMonths : Math.max(1, Math.round(g / DB.monthly)); const set = [...[1, 3, 6, 12, 24].filter(m => m < goalM).slice(-3), goalM]; return set.map(m => ({ key: 'm' + m, label: m >= 12 && m % 12 === 0 ? `${m / 12} yr` : `${m} mo`, amount: m * DB.monthly, sub: m === goalM ? 'Goal' : 'freedom' })); }
+  if (!g) return [];
+  return [.25, .5, .75, 1].map(p => ({ key: 'p' + p, label: p === 1 ? '100%' : `${p * 100}%`, amount: g * p, sub: p === 1 ? 'Goal' : 'of goal' }));
+}
+function processAuto() {
+  const c = DB.contrib; let n = 0;
+  if (!c.auto || !(c.amount > 0) || !c.next) return 0;
+  let g = 0; while (c.next <= today() && g++ < 240) { DB.entries.push({ id: uid(), date: c.next, amount: round2(c.amount), note: 'Monthly contribution', auto: true, created: Date.now() + n }); n++; c.next = addMonths(c.next, 1, c.day); }
+  return n;
+}
+function checkMilestones(prevBal) {
+  const b = balance(); const hit = milestones().filter(m => m.amount > 0 && b >= m.amount && prevBal < m.amount && !DB.celebrated.includes(m.key));
+  if (!hit.length) return;
+  hit.forEach(m => DB.celebrated.push(m.key)); save();
+  const top = hit[hit.length - 1];
+  confetti(); toast(top.sub === 'Goal' ? `🎉 Goal reached! You're free.` : DB.monthly > 0 ? `🎉 ${top.label.replace('mo', 'months').replace('yr', 'year')} of freedom saved!` : `🎉 ${top.label} of your goal!`);
+}
+
+/* ===== UI ===== */
+const GEAR = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+let showAll = false, chartPts = [];
+function render() {
+  if (!DB.setup) return renderOnboard();
+  const b = balance(), g = goal(), p = g > 0 ? Math.min(1, Math.max(0, b / g)) : 0, m = monthsOf(b);
+  const R = 108, C = 2 * Math.PI * R;
+  const e = eta(), ms = milestones();
+  const sorted = [...DB.entries].sort((a, z) => z.date.localeCompare(a.date) || (z.created || 0) - (a.created || 0));
+  const shown = showAll ? sorted : sorted.slice(0, 8);
+  $('#app').innerHTML = `
+  <header><h1>${esc(DB.name)}</h1><button class="icon-btn" data-act="settings" aria-label="Settings">${GEAR}</button></header>
+  <section class="card hero">
+    <div class="ring-wrap"><svg viewBox="0 0 250 250"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset=".5" stop-color="var(--gold)"/><stop offset="1" stop-color="var(--gold2)"/></linearGradient></defs>
+      <circle cx="125" cy="125" r="${R}" fill="none" stroke="var(--card2)" stroke-width="16"/>
+      <circle cx="125" cy="125" r="${R}" fill="none" stroke="url(#rg)" stroke-width="16" stroke-linecap="round" stroke-dasharray="${(C * p).toFixed(1)} ${C.toFixed(1)}" style="filter:drop-shadow(0 0 8px color-mix(in srgb, var(--gold2) 55%, transparent))"/></svg>
+      <div class="ring-center"><div class="bal num">${money(b, { whole: Math.abs(b) >= 10000 })}</div><div class="of num">${g > 0 ? `of ${money(g, { whole: true })} goal` : 'no goal set'}</div>${g > 0 ? `<div class="pct num">${b >= g ? 'Goal reached 🎉' : Math.floor(p * 100) + '%'}</div>` : ''}</div></div>
+    ${m != null ? `<div class="freedom num">🕊️ ${monthsText(Math.max(0, m))} of freedom<small>${b > 0 ? `If you walked away today, this covers you until <b>${fmtD(walkAwayDate(m))}</b>.` : 'Add money to start buying back your time.'}</small></div>`
+      : `<div class="freedom" style="font-size:16px"><small>Set your monthly cost of living in ⚙ to see how many months of freedom this buys.</small></div>`}
+    <div class="actions"><button class="btn" data-act="add">＋ Add money</button><button class="btn ghost" data-act="out">− Take out</button></div>
+  </section>
+  ${g > 0 ? `<section class="card"><h2>Your plan<button class="link" data-act="settings">Edit</button></h2>
+    <div class="plan-line">${b >= g ? `You've hit your goal of <b>${money(g, { whole: true })}</b>. Anything more is extra freedom.` : e && !e.none ? `At <b>${money(e.rate, { whole: true })}/month</b> you'll reach your goal in <b>${e.months} month${e.months === 1 ? '' : 's'}</b>, around <b>${fmtD(e.date, { month: 'long', year: 'numeric' })}</b>.${e.planned ? '' : ' <span class="muted small">(your average over the last 3 months)</span>'}` : `<b>${money(g - b, { whole: true })}</b> to go. Set a monthly contribution to see when you'll get there.`}</div>
+    <div class="bar"><i style="width:${(p * 100).toFixed(1)}%"></i>${ms.filter(x => x.amount < g).map(x => `<span class="mk" style="left:${(x.amount / g * 100).toFixed(1)}%"><span>${x.label}</span></span>`).join('')}</div>
+    <div class="small muted" style="margin-top:22px;display:flex;justify-content:space-between"><span class="num">${money(b, { whole: true })} saved</span><span class="num">${money(Math.max(0, g - b), { whole: true })} to go</span></div>
+  </section>` : ''}
+  ${ms.length ? `<section class="card"><h2>Milestones</h2><div class="ms" style="grid-template-columns:repeat(${ms.length},1fr)">${ms.map(x => `<div class="${b >= x.amount && x.amount > 0 ? 'on' : ''}"><b>${b >= x.amount && x.amount > 0 ? '✓' : x.label}</b>${b >= x.amount && x.amount > 0 ? x.label : x.sub}</div>`).join('')}</div></section>` : ''}
+  <section class="card"><h2>Growth</h2><div class="readout" id="readout"></div><div id="chart"></div>
+    <div class="seg">${['3M', '1Y', 'All'].map(r => `<button class="${DB.range === r ? 'on' : ''}" data-act="range" data-r="${r}">${r}</button>`).join('')}</div></section>
+  <section class="card"><h2>History${sorted.length > 8 ? `<button class="link" data-act="all">${showAll ? 'Show less' : `Show all ${sorted.length}`}</button>` : ''}</h2>
+    ${sorted.length ? `<ul class="list">${shown.map(x => `<li class="item" data-act="edit" data-id="${x.id}"><div class="dot">${x.amount >= 0 ? (x.auto ? '🔁' : '💰') : '💸'}</div><div class="grow"><div class="t">${esc(x.note || (x.amount >= 0 ? 'Added' : 'Taken out'))}</div><div class="s">${fmtD(x.date)}</div></div><div class="amt num ${x.amount >= 0 ? 'pos' : 'neg'}">${money(x.amount, { sign: true })}</div></li>`).join('')}</ul>` : '<div class="empty">Nothing yet. Every deposit is a little more freedom.</div>'}
+  </section>
+  ${DB.entries.length >= 6 && (!DB.lastBackup || Date.now() - DB.lastBackup > 30 * 864e5) && Date.now() - (DB.installedAt || 0) > 14 * 864e5 ? `<section class="card" style="display:flex;gap:12px;align-items:center"><div class="dot">💾</div><div class="grow"><b>Back up your fund</b><div class="small muted">Keeps your history safe if you change phones.</div></div><button class="btn ghost" style="width:auto;padding:10px 14px" data-act="backup">Back up</button></section>` : ''}
+  <div class="small muted" style="text-align:center;margin-top:18px">Private. Stored only on this device.</div>`;
+  drawChart();
+}
+function series() {
+  const t = today(); const first = DB.entries.reduce((m, e) => e.date < m ? e.date : m, t);
+  const from = DB.range === '3M' ? addDays(t, -90) : DB.range === '1Y' ? addDays(t, -364) : first;
+  const start = from < first ? from : from; const delta = {}; let v = 0;
+  for (const e of DB.entries) { if (e.date < start) v += e.amount; else if (e.date <= t) delta[e.date] = (delta[e.date] || 0) + e.amount; }
+  const pts = []; for (let d = start; d <= t; d = addDays(d, 1)) { v += delta[d] || 0; pts.push({ d, v: round2(v) }); }
+  if (pts.length < 2) pts.unshift({ d: addDays(start, -1), v: 0 });
+  return pts;
+}
+function drawChart() {
+  const pts = chartPts = series(); const W = 340, H = 150, P = { t: 10, b: 20 };
+  const g = goal(); let min = Math.min(0, ...pts.map(p => p.v)), max = Math.max(...pts.map(p => p.v), g > 0 && g < Math.max(...pts.map(p => p.v)) * 1.6 ? g : 0, 1);
+  const X = i => i / (pts.length - 1) * W, Y = v => P.t + (1 - (v - min) / (max - min)) * (H - P.t - P.b);
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p.v).toFixed(1)).join('');
+  const lab = i => fmtD(pts[i].d, DB.range === '3M' ? { month: 'short', day: 'numeric' } : { month: 'short', year: '2-digit' });
+  const goalLine = g > 0 && g <= max ? `<line x1="0" x2="${W}" y1="${Y(g)}" y2="${Y(g)}" stroke="var(--gold)" stroke-dasharray="4 4" opacity=".6"/><text x="${W}" y="${Y(g) - 4}" text-anchor="end">goal</text>` : '';
+  $('#chart').innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" id="chartsvg"><defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--gold)" stop-opacity=".35"/><stop offset="1" stop-color="var(--gold)" stop-opacity="0"/></linearGradient></defs>${goalLine}
+    <path d="${d}L${W} ${H - P.b}L0 ${H - P.b}Z" fill="url(#ar)"/><path d="${d}" fill="none" stroke="var(--gold)" stroke-width="2.6" stroke-linejoin="round"/>
+    <text x="0" y="${H - 4}">${lab(0)}</text><text x="${W / 2}" y="${H - 4}" text-anchor="middle">${lab(Math.floor(pts.length / 2))}</text><text x="${W}" y="${H - 4}" text-anchor="end">${lab(pts.length - 1)}</text>
+    <g id="cur" style="display:none"><line y1="${P.t}" y2="${H - P.b}" stroke="var(--muted)"/><circle r="5" fill="var(--gold)" stroke="var(--card)" stroke-width="2"/></g></svg>`;
+  const first = pts[0].v, last = pts[pts.length - 1].v, ch = last - first;
+  const def = `<b class="num">${money(last)}</b>${Math.abs(ch) >= .005 ? `<span class="${ch > 0 ? 'pos' : 'neg'} num">${money(ch, { sign: true })}</span> over ${DB.range === 'All' ? 'all time' : 'the past ' + (DB.range === '3M' ? '3 months' : 'year')}` : 'No change in this range'}`;
+  $('#readout').innerHTML = def;
+  const svg = $('#chartsvg'), cur = $('#cur');
+  const show = ev => { const r = svg.getBoundingClientRect(); const i = Math.max(0, Math.min(pts.length - 1, Math.round((ev.clientX - r.left) / r.width * (pts.length - 1)))); cur.style.display = ''; cur.querySelector('line').setAttribute('x1', X(i)); cur.querySelector('line').setAttribute('x2', X(i)); const c = cur.querySelector('circle'); c.setAttribute('cx', X(i)); c.setAttribute('cy', Y(pts[i].v)); $('#readout').innerHTML = `<b class="num">${money(pts[i].v)}</b>${fmtD(pts[i].d, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}`; };
+  const hide = () => { cur.style.display = 'none'; $('#readout').innerHTML = def; };
+  svg.addEventListener('pointerdown', show); svg.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) show(e); }); svg.addEventListener('pointerleave', hide); svg.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') setTimeout(hide, 1500); });
+}
+
+/* ===== onboarding ===== */
+function renderOnboard() {
+  const st = { months: 6 };
+  $('#app').innerHTML = `<div class="onboard"><img src="icons/icon-192.png" alt=""><h2>Your walk-away money</h2>
+    <p class="muted" style="margin:0 12px">Track one number: how long you could say “no” to anything (a job, a boss, a bad deal) and still pay your bills.</p>
+    <div class="card" style="margin-top:20px">
+      <label class="field"><span>How much is in your fund right now?</span><input class="input num" id="ob-bal" inputmode="decimal" placeholder="0.00"></label>
+      <label class="field"><span>What does a month of life cost you? (rent, bills, food, essentials)</span><input class="input num" id="ob-mo" inputmode="decimal" placeholder="e.g. 3,000"></label>
+      <div class="field"><span>Goal: how many months of freedom?</span></div>
+      <div class="goalpick" id="ob-goal">${[3, 6, 9, 12].map(m => `<button data-m="${m}" class="${m === 6 ? 'on' : ''}">${m} mo</button>`).join('')}</div>
+      <label class="field"><span>How much will you add each month? (optional)</span><input class="input num" id="ob-c" inputmode="decimal" placeholder="e.g. 500"></label>
+      <label class="field"><span>Currency</span><select class="input" id="ob-cur">${CURRENCIES.map(c => `<option ${c === DB.currency ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
+      <button class="btn" id="ob-go">Start my fund</button>
+      <label class="btn ghost" style="display:block;text-align:center;margin-top:10px;cursor:pointer">Restore a backup<input type="file" id="ob-restore" hidden accept=".json,application/json"></label>
+    </div></div>`;
+  $('#ob-goal').onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; st.months = +b.dataset.m; [...$('#ob-goal').children].forEach(x => x.classList.toggle('on', x === b)); };
+  $('#ob-restore').onchange = e => restore(e.target.files[0]);
+  $('#ob-go').onclick = () => {
+    DB.currency = $('#ob-cur').value; Object.keys(fc).forEach(k => delete fc[k]);
+    const bal = parseAmount($('#ob-bal').value), mo = Math.abs(parseAmount($('#ob-mo').value)), c = Math.abs(parseAmount($('#ob-c').value));
+    DB.monthly = mo > 0 ? round2(mo) : 0; DB.goalMode = DB.monthly > 0 ? 'months' : 'amount'; DB.goalMonths = st.months;
+    if (bal) DB.entries.push({ id: uid(), date: today(), amount: round2(bal), note: 'Starting balance', created: Date.now() });
+    if (c > 0) { DB.contrib = { amount: round2(c), day: parseD(today()).getDate() > 28 ? 1 : parseD(today()).getDate(), auto: false, next: null }; }
+    DB.setup = true;
+    // milestones already covered by the starting balance don't celebrate
+    milestones().forEach(m => { if (balance() >= m.amount && m.amount > 0) DB.celebrated.push(m.key); });
+    save(); render(); scrollTo(0, 0); toast('Your fund is set up');
+  };
+}
+
+/* ===== sheets ===== */
+function openSheet(title, html, mount) {
+  closeSheet();
+  $('#sheet-root').innerHTML = `<div class="backdrop" data-close></div><div class="sheet" role="dialog" aria-label="${esc(title)}"><div class="sheet-h"><button data-close>Cancel</button><h3>${esc(title)}</h3><span style="width:70px"></span></div><div class="sb">${html}</div></div>`;
+  $('#sheet-root').onclick = e => { if (e.target.closest('[data-close]')) closeSheet(); };
+  document.body.style.overflow = 'hidden'; $('#toast').classList.remove('show');
+  const el = $('.sheet'); if (mount) mount(el); return el;
+}
+function closeSheet() { $('#sheet-root').innerHTML = ''; document.body.style.overflow = ''; }
+function entrySheet(kind, entry) {
+  const out = entry ? entry.amount < 0 : kind === 'out';
+  const recent = [...new Set(DB.entries.filter(e => (e.amount < 0) === out && e.note !== 'Starting balance').map(e => Math.abs(e.amount)))].slice(-3);
+  const quick = [...new Set([...(out ? [] : [50, 100, 250, 500]), ...recent])].slice(0, 5);
+  openSheet(entry ? 'Edit entry' : out ? 'Take money out' : 'Add money', `
+    <input class="amount-in num ${out ? 'out' : 'in'}" id="e-amt" inputmode="decimal" placeholder="0" value="${entry ? Math.abs(entry.amount) : ''}" autocomplete="off">
+    <div class="chips">${quick.map(q => `<button class="chip num" data-q="${q}">${money(q, { whole: q % 1 === 0 })}</button>`).join('')}</div>
+    <label class="field"><span>Note</span><input class="input" id="e-note" placeholder="${out ? 'e.g. Car repair' : 'e.g. Paycheck, bonus, side gig'}" value="${esc(entry ? entry.note : '')}"></label>
+    <div class="two"><label class="field"><span>Date</span><input class="input" type="date" id="e-date" value="${entry ? entry.date : today()}"></label>
+      <label class="field"><span>Type</span><select class="input" id="e-kind"><option value="in" ${!out ? 'selected' : ''}>Added</option><option value="out" ${out ? 'selected' : ''}>Taken out</option></select></label></div>
+    ${out && !entry ? `<div class="hint">Taking money out is fine; that's what it's for. The app just shows how much freedom it costs.</div><div class="hint" id="e-impact"></div>` : ''}
+    <button class="btn" id="e-save">${entry ? 'Save' : out ? 'Take out' : 'Add to fund'}</button>
+    ${entry ? '<button class="btn danger" id="e-del" style="margin-top:10px">Delete entry</button>' : ''}`, el => {
+    const amt = $('#e-amt', el); if (!entry) setTimeout(() => amt.focus(), 80);
+    const impact = () => { const box = $('#e-impact', el); if (!box || !(DB.monthly > 0)) return; const v = Math.abs(parseAmount(amt.value)); box.textContent = v ? `That's ${monthsText(v / DB.monthly)} of freedom.` : ''; };
+    amt.oninput = impact;
+    $('#e-kind', el).onchange = e => amt.className = 'amount-in num ' + (e.target.value === 'out' ? 'out' : 'in');
+    el.addEventListener('click', e => { const q = e.target.closest('[data-q]'); if (q) { amt.value = q.dataset.q; impact(); } });
+    $('#e-save', el).onclick = () => {
+      const v = Math.abs(parseAmount(amt.value)); if (!v) { toast('Enter an amount'); amt.focus(); return; }
+      const signed = round2($('#e-kind', el).value === 'out' ? -v : v);
+      const d = isValidDate($('#e-date', el).value) ? $('#e-date', el).value : today();
+      const prev = balance();
+      if (entry) Object.assign(entry, { amount: signed, date: d, note: $('#e-note', el).value.trim() });
+      else DB.entries.push({ id: uid(), date: d, amount: signed, note: $('#e-note', el).value.trim(), created: Date.now() });
+      save(); closeSheet(); render();
+      if (!entry) { const added = DB.entries[DB.entries.length - 1]; toast(signed > 0 ? `Added ${money(signed)}` : `Took out ${money(-signed)}`, 'Undo', () => { DB.entries = DB.entries.filter(x => x !== added); save(); render(); }); }
+      else toast('Saved');
+      checkMilestones(prev);
+    };
+    if (entry) $('#e-del', el).onclick = () => { const removed = entry; DB.entries = DB.entries.filter(x => x !== entry); save(); closeSheet(); render(); toast('Deleted', 'Undo', () => { DB.entries.push(removed); save(); render(); }); };
+  });
+}
+function settingsSheet() {
+  const c = DB.contrib;
+  openSheet('Settings', `
+    <label class="field"><span>Name</span><input class="input" id="s-name" value="${esc(DB.name)}"></label>
+    <div class="sec">Your numbers</div>
+    <label class="field"><span>Monthly cost of living</span><input class="input num" id="s-mo" inputmode="decimal" value="${DB.monthly || ''}" placeholder="e.g. 3,000"></label>
+    <div class="hint">Rent, bills, food, insurance: what you'd need each month if your income stopped. Used for “months of freedom”.</div>
+    <label class="field"><span>Goal</span><select class="input" id="s-gm"><option value="months" ${DB.goalMode === 'months' ? 'selected' : ''}>Months of living costs</option><option value="amount" ${DB.goalMode === 'amount' ? 'selected' : ''}>A set amount</option></select></label>
+    <div id="s-gwrap"></div>
+    <div class="sec">Monthly contribution</div>
+    <div class="two"><label class="field"><span>Amount</span><input class="input num" id="s-c" inputmode="decimal" value="${c.amount || ''}" placeholder="e.g. 500"></label>
+      <label class="field"><span>Day of month</span><select class="input" id="s-cd">${Array.from({ length: 28 }, (_, i) => `<option ${c.day === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></label></div>
+    <label class="toggle"><input type="checkbox" id="s-auto" ${c.auto ? 'checked' : ''}><span>Add it automatically each month</span></label>
+    <div class="hint">Turn this on if the money moves to your fund automatically (e.g. a scheduled transfer at your bank). Leave it off to add each deposit yourself. The amount is still used to predict when you'll hit your goal.</div>
+    <div class="sec">App</div>
+    <div class="two"><label class="field"><span>Currency</span><select class="input" id="s-cur">${CURRENCIES.map(x => `<option ${x === DB.currency ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+      <label class="field"><span>Theme</span><select class="input" id="s-theme">${[['auto', 'System'], ['dark', 'Dark'], ['light', 'Light']].map(([k, l]) => `<option value="${k}" ${DB.theme === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+    <button class="btn" id="s-save">Save</button>
+    <div class="sec">Your data</div>
+    <div class="hint">Everything is stored only on this device, saved in two places. Back up to keep it safe or move to a new phone.</div>
+    <div class="two"><button class="btn ghost" id="s-backup">Back up</button><label class="btn ghost" style="text-align:center;cursor:pointer">Restore<input type="file" id="s-restore" hidden accept=".json,application/json"></label></div>
+    <button class="btn ghost" id="s-csv" style="margin-top:10px">Export CSV</button>
+    <button class="btn danger" id="s-reset" style="margin-top:10px">Erase everything</button>`, el => {
+    const gw = () => { $('#s-gwrap', el).innerHTML = $('#s-gm', el).value === 'months' ? `<label class="field"><span>Months of freedom to aim for</span><input class="input num" id="s-gmo" type="number" min="1" max="60" value="${DB.goalMonths || 6}"></label>` : `<label class="field"><span>Goal amount</span><input class="input num" id="s-ga" inputmode="decimal" value="${DB.goalAmount || ''}" placeholder="e.g. 20,000"></label>`; };
+    gw(); $('#s-gm', el).onchange = gw;
+    $('#s-save', el).onclick = () => {
+      DB.name = $('#s-name', el).value.trim() || 'Fuck You Fund';
+      DB.monthly = Math.abs(parseAmount($('#s-mo', el).value)) || 0;
+      DB.goalMode = $('#s-gm', el).value;
+      if (DB.goalMode === 'months') DB.goalMonths = Math.max(1, Math.min(60, +($('#s-gmo', el).value) || 6)); else DB.goalAmount = Math.abs(parseAmount($('#s-ga', el).value)) || 0;
+      const amt = Math.abs(parseAmount($('#s-c', el).value)) || 0, day = +$('#s-cd', el).value, auto = $('#s-auto', el).checked;
+      const wasAuto = DB.contrib.auto;
+      DB.contrib = { amount: round2(amt), day, auto: auto && amt > 0, next: DB.contrib.next };
+      if (DB.contrib.auto && (!wasAuto || !DB.contrib.next || parseD(DB.contrib.next).getDate() !== day)) { const t = today(); let n = ymd(new Date(parseD(t).getFullYear(), parseD(t).getMonth(), day)); if (n <= t) n = addMonths(n, 1, day); DB.contrib.next = n; }
+      DB.currency = $('#s-cur', el).value; Object.keys(fc).forEach(k => delete fc[k]);
+      DB.theme = $('#s-theme', el).value; theme();
+      const prev = balance(); processAuto(); save(); closeSheet(); render(); toast('Saved'); checkMilestones(prev);
+    };
+    $('#s-backup', el).onclick = backup;
+    $('#s-restore', el).onchange = e => restore(e.target.files[0]);
+    $('#s-csv', el).onclick = () => { const rows = [['date', 'amount', 'note'], ...[...DB.entries].sort((a, b) => a.date.localeCompare(b.date)).map(e => [e.date, e.amount.toFixed(2), e.note || ''])]; download('fu-fund.csv', rows.map(r => r.map(x => /[",\n]/.test(x) ? '"' + String(x).replace(/"/g, '""') + '"' : x).join(',')).join('\n'), 'text/csv'); };
+    $('#s-reset', el).onclick = () => { if (!confirm('Erase your fund and all its history from this device? This can’t be undone.')) return; DB = blank(); save(); closeSheet(); render(); };
+  });
+}
+function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+async function backup() {
+  DB.lastBackup = Date.now(); save();
+  const name = `fu-fund-backup-${today()}.json`, text = JSON.stringify(DB, null, 1);
+  try { const f = new File([text], name, { type: 'application/json' }); if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: 'Fund backup' }); toast('Backup saved'); render(); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  download(name, text, 'application/json'); toast('Backup downloaded'); render();
+}
+function restore(file) {
+  if (!file) return; const r = new FileReader();
+  r.onload = () => { try { const d = JSON.parse(r.result); if (!d || !Array.isArray(d.entries)) throw 0; if (DB.setup && !confirm('Replace your fund on this device with this backup?')) return; DB = { ...blank(), ...d }; save(); closeSheet(); theme(); render(); toast('Backup restored'); } catch (e) { toast("That isn't a fund backup"); } };
+  r.readAsText(file);
+}
+
+/* ===== bits ===== */
+let tt;
+function toast(msg, action, fn) { const t = $('#toast'); t.innerHTML = `<span>${esc(msg)}</span>${action ? `<button>${esc(action)}</button>` : ''}`; if (action) $('button', t).onclick = () => { t.classList.remove('show'); fn(); }; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), action ? 5000 : 2800); }
+function confetti() { const c = document.createElement('div'); c.className = 'confetti'; const cols = ['#ffc23d', '#ff8a1f', '#fff1b8', '#7fe0a8', '#ffffff']; for (let i = 0; i < 70; i++) { const p = document.createElement('i'); p.style.left = Math.random() * 100 + '%'; p.style.background = cols[i % cols.length]; p.style.animationDelay = Math.random() * .6 + 's'; p.style.animationDuration = 1.8 + Math.random() * 1.4 + 's'; c.appendChild(p); } document.body.appendChild(c); setTimeout(() => c.remove(), 3800); }
+function theme() { const t = DB.theme || 'auto'; if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = t; }
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  const act = a.dataset.act;
+  if (act === 'add') entrySheet('in'); else if (act === 'out') entrySheet('out');
+  else if (act === 'settings') settingsSheet();
+  else if (act === 'range') { DB.range = a.dataset.r; save(); render(); }
+  else if (act === 'all') { showAll = !showAll; render(); }
+  else if (act === 'edit') { const x = DB.entries.find(y => y.id === a.dataset.id); if (x) entrySheet(null, x); }
+  else if (act === 'backup') backup();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); if (e.key === 'Enter' && e.target.closest('.sheet') && e.target.tagName === 'INPUT') { const b = $('#e-save') || $('#s-save'); if (b) b.click(); } });
+
+(async function boot() {
+  load(); await recover(); theme();
+  if (DB.setup) { const prev = balance(); const n = processAuto(); if (n) { save(); setTimeout(() => toast(`Added ${n} monthly contribution${n > 1 ? 's' : ''}`), 400); } render(); checkMilestones(prev); } else render();
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { }
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => { });
+})();
+</script>
+</body>
+</html>
