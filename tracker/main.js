@@ -12,7 +12,7 @@ function refreshTop() { const top = sheetStack[sheetStack.length - 1]; if (top &
 const ACTIONS = {
   tab(el) { ui.tab = el.dataset.tab; if (ui.tab !== 'activity') { ui.selecting = false; ui.selected.clear(); } render(); window.scrollTo(0, 0); if (el.dataset.focus) setTimeout(() => $('#search') && $('#search').focus(), 30); },
   'new-tx'(el) { openTxSheet({ cat: el.dataset.cat, kind: el.dataset.kind }); },
-  'edit-tx'(el) { const sw = el.closest('.swipe'); if (sw && sw.dataset.justSwiped) return; if (sw && +$('.front', sw).dataset.off) { $('.front', sw).style.transform = ''; $('.front', sw).dataset.off = 0; return; } openTxSheet({ id: el.dataset.id }); },
+  'edit-tx'(el) { const sw = el.closest('.swipe'); if (sw && sw.dataset.justSwiped) return; if (sw && +$('.front', sw).dataset.off) { $('.front', sw).style.transform = ''; $('.front', sw).dataset.off = 0; return; } const tx = S().transactions.find(x => x.id === el.dataset.id); if (tx && tx.kind === 'adjust') openAdjustSheet(tx); else openTxSheet({ id: el.dataset.id }); },
   'delete-tx'(el) { deleteTx([el.dataset.id]); },
   process(el) {
     const id = el.dataset.id;

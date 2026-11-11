@@ -218,11 +218,14 @@ const catEmoji = id => (cat(id) || { emoji: '❔' }).emoji;
 function toBase(amount, cur) { const sp = S(); if (!cur || cur === sp.currency) return amount; return amount * (+sp.rates[cur] || 1); }
 function fromBase(amount, cur) { const sp = S(); if (!cur || cur === sp.currency) return amount; return amount / (+sp.rates[cur] || 1); }
 const txBase = t => toBase(t.amount, acctCur(t.accountId));
-const ACCOUNT_TYPES = { checking: 'Checking', savings: 'Savings', credit: 'Credit card', cash: 'Cash' };
-const isLiquid = a => a && !a.archived && a.type !== 'savings';
+const ACCOUNT_TYPES = { checking: 'Checking', savings: 'Savings', investment: 'Investment', credit: 'Credit card', cash: 'Cash' };
+/* Savings and investments are money set aside: never part of spendable cash */
+const isSetAside = a => !!a && (a.type === 'savings' || a.type === 'investment');
+const isLiquid = a => a && !a.archived && !isSetAside(a);
 
 /* Effects of a transaction on account balances: [[accountId, delta in that account's currency]] */
 function txEffects(t) {
+  if (t.kind === 'adjust') return [[t.accountId, t.amount]]; // market value change (signed), not income/spending
   if (t.kind === 'expense') return [[t.accountId, -t.amount]];
   if (t.kind === 'income') return [[t.accountId, t.amount]];
   const to = t.toAmount != null ? t.toAmount : fromBase(toBase(t.amount, acctCur(t.accountId)), acctCur(t.toAccountId));
@@ -333,7 +336,7 @@ function safeToSpend() {
   const liquidAccs = sp.accounts.filter(isLiquid);
   const cash = sum(liquidAccs, a => toBase(bal[a.id], a.currency));
   const ups = upcoming(t, addDays(pay.date, -1));
-  const isSav = id => (acct(id) || {}).type === 'savings';
+  const isSav = id => isSetAside(acct(id));
   const bills = sum(ups.filter(u => u.kind === 'expense' && isLiquid(acct(u.accountId))), u => toBase(u.amount, acctCur(u.accountId)));
   const savingsRec = sum(ups.filter(u => u.kind === 'transfer' && isSav(u.toAccountId) && isLiquid(acct(u.accountId))), u => toBase(u.amount, acctCur(u.accountId)));
   const [ps, pe] = periodRange(0);
@@ -358,7 +361,7 @@ function totals(a, b) {
   const tx = txIn(a, b);
   const income = sum(tx.filter(t => t.kind === 'income'), txBase);
   const expense = sum(tx.filter(t => t.kind === 'expense'), txBase);
-  const toSavings = sum(tx.filter(t => t.kind === 'transfer' && (acct(t.toAccountId) || {}).type === 'savings'), txBase);
+  const toSavings = sum(tx.filter(t => t.kind === 'transfer' && isSetAside(acct(t.toAccountId)) && !isSetAside(acct(t.accountId))), txBase);
   return { income, expense, toSavings, net: income - expense };
 }
 

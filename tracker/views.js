@@ -102,18 +102,19 @@ function upItemHTML(u) {
 const txSort = (a, b) => b.date.localeCompare(a.date) || (b.created || 0) - (a.created || 0);
 function txItemHTML(t, opts = {}) {
   const a = acct(t.accountId) || { name: '?' };
-  const isT = t.kind === 'transfer';
-  const title = t.note || (isT ? 'Transfer' : catName(t.categoryId));
+  const isT = t.kind === 'transfer', isAdj = t.kind === 'adjust';
+  const title = isAdj ? 'Value update' : t.note || (isT ? 'Transfer' : catName(t.categoryId));
   const subParts = [];
-  if (!isT && t.note) subParts.push(esc(catName(t.categoryId)));
-  if (isT) subParts.push(`${esc(a.name)} → ${esc((acct(t.toAccountId) || { name: '?' }).name)}`); else if (S().accounts.length > 1) subParts.push(esc(a.name));
+  if (isAdj) subParts.push(esc(a.name) + ' · market value');
+  else if (!isT && t.note) subParts.push(esc(catName(t.categoryId)));
+  if (isT) subParts.push(`${esc(a.name)} → ${esc((acct(t.toAccountId) || { name: '?' }).name)}`); else if (!isAdj && S().accounts.length > 1) subParts.push(esc(a.name));
   if (opts.showDate) subParts.push(relDay(t.date));
   const tags = (t.tags || []).map(x => `<span class="tag">#${esc(x)}</span>`).join(' ');
   const sign = t.kind === 'income' ? '+' : t.kind === 'expense' ? '−' : '';
   const sel = ui.selecting ? `<span class="check ${ui.selected.has(t.id) ? 'on' : ''}">${ui.selected.has(t.id) ? '✓' : ''}</span>` : '';
-  return `<li class="item tap" data-act="${ui.selecting && opts.selectable ? 'toggle-sel' : 'edit-tx'}" data-id="${t.id}">${sel}<div class="emoji">${isT ? '🔁' : catEmoji(t.categoryId)}</div>
+  return `<li class="item tap" data-act="${ui.selecting && opts.selectable ? 'toggle-sel' : 'edit-tx'}" data-id="${t.id}">${sel}<div class="emoji">${isAdj ? '📈' : isT ? '🔁' : catEmoji(t.categoryId)}</div>
     <div class="grow"><div class="t ellipsis">${esc(title)} ${t.planned ? '<span class="badge warn">Planned</span>' : ''}${t.recurringId ? ' <span class="badge">↻</span>' : ''}</div><div class="s ellipsis">${subParts.join(' · ')} ${tags}</div></div>
-    <div class="amt num ${t.kind === 'income' ? 'pos' : ''}">${sign}${fmt(t.amount, acctCur(t.accountId))}</div></li>`;
+    <div class="amt num ${t.kind === 'income' || (isAdj && t.amount > 0) ? 'pos' : isAdj && t.amount < 0 ? 'neg' : ''}">${isAdj ? fmt(t.amount, acctCur(t.accountId), { sign: true }) : sign + fmt(t.amount, acctCur(t.accountId))}</div></li>`;
 }
 
 /* ===== Activity ===== */
@@ -127,7 +128,7 @@ function filteredTx() {
     if (ui.filter.startsWith('acc:') && t.accountId !== ui.filter.slice(4) && t.toAccountId !== ui.filter.slice(4)) return false;
     if (ui.filter.startsWith('cat:') && t.categoryId !== ui.filter.slice(4)) return false;
     if (!q) return true;
-    const hay = [t.note, catName(t.categoryId), (acct(t.accountId) || {}).name, ...(t.tags || []).map(x => '#' + x), String(t.amount), t.date].join(' ').toLowerCase();
+    const hay = [t.kind === 'adjust' ? 'value update investment' : '', t.note, catName(t.categoryId), (acct(t.accountId) || {}).name, ...(t.tags || []).map(x => '#' + x), String(t.amount), t.date].join(' ').toLowerCase();
     return q.split(/\s+/).every(w => hay.includes(w));
   }).sort(txSort);
 }
@@ -346,7 +347,10 @@ VIEWS.accounts = () => {
   const first = pts[0].v, last = pts[pts.length - 1].v, ch = last - first;
   let hi = pts[0], lo = pts[0]; for (const p of pts) { if (p.v > hi.v) hi = p; if (p.v < lo.v) lo = p; }
   const f = v => fmt(v, selCur);
-  const summary = pts.length < 2 ? 'Not enough history yet.' : `${ui.accSel === 'all' ? 'Your combined balance' : esc(acct(ui.accSel).name)} ${Math.abs(ch) < .005 ? 'held steady' : ch > 0 ? `rose ${f(ch)}` : `fell ${f(-ch)}`}${first ? ` (${ch >= 0 ? '+' : '−'}${pct(Math.abs(ch / first))})` : ''} over this range. It peaked at ${f(hi.v)} on ${fmtDate(hi.date)} and was lowest at ${f(lo.v)} on ${fmtDate(lo.date)}.`;
+  const who = ui.accSel === 'all' ? 'Your combined balance' : esc(acct(ui.accSel).name);
+  const flat = Math.abs(hi.v - lo.v) < .005;
+  const summary = pts.length < 2 ? 'Not enough history yet.' : flat ? `${who} stayed at ${f(last)} for this whole range. Log transactions, or pick a longer range, to see it move.`
+    : `${who} ${Math.abs(ch) < .005 ? 'ended where it started' : ch > 0 ? `rose ${f(ch)}` : `fell ${f(-ch)}`}${first && Math.abs(ch) >= .005 ? ` (${ch >= 0 ? '+' : '−'}${pct(Math.abs(ch / first))})` : ''} over this range. It peaked at ${f(hi.v)} on ${fmtDate(hi.date)} and was lowest at ${f(lo.v)} on ${fmtDate(lo.date)}.`;
   const net = sum(accs, a => toBase(bal[a.id], a.currency));
   const byType = {};
   for (const a of accs) (byType[a.type] = byType[a.type] || []).push(a);

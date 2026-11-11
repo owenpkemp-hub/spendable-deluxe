@@ -167,6 +167,21 @@ function processPlanned(id) {
   commit(`Processed ${t.note || catName(t.categoryId)}`);
 }
 
+function openAdjustSheet(t) {
+  const a = acct(t.accountId) || { name: '?' };
+  const html = `<div class="small muted" style="margin-bottom:12px">A change in what <b>${esc(a.name)}</b> is worth. It doesn't count as income or spending.</div>
+    <label class="field"><span>Change in value (use − for a drop)</span><input class="input num" id="ad-amt" inputmode="decimal" value="${t.amount}"></label>
+    <label class="field"><span>Date</span><input class="input" type="date" id="ad-date" value="${t.date}"></label>
+    <button class="btn" data-save="1">Save</button><button class="btn danger" data-del="1">Delete</button>`;
+  openSheet('Value update', html, {
+    onMount: el => el.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b || b.closest('.sheet-h')) return;
+      if (b.dataset.save) { const v = parseAmount($('#ad-amt', el).value); if (isNaN(v) || !v) return toast('Enter the change in value'); t.amount = round2(v); const d = $('#ad-date', el).value; if (isValidDate(d)) t.date = d; closeSheet(); commit('Saved'); }
+      if (b.dataset.del) { closeSheet(); deleteTx([t.id]); }
+    })
+  });
+}
+
 /* ===== Recurring ===== */
 function openRecSheet(id, preset = {}) {
   const r = id ? S().recurring.find(x => x.id === id) : null;
@@ -291,22 +306,30 @@ function openCatSheet(id, kind = 'expense', onCreated) {
 }
 
 /* ===== Account ===== */
+function acctHint(type, existing) {
+  if (type === 'investment') return existing
+    ? 'Update this whenever you check your brokerage app (once a month is plenty). Each update is saved as a dated <b>value update</b>, so the Accounts chart shows your growth. It never counts as income or spending. To log money you put in, use a <b>Transfer</b> from checking.'
+    : 'Enter what the account is worth today. Investment accounts count toward net worth, never toward safe-to-spend. Money you move in with a <b>Transfer</b> counts as money set aside.';
+  if (type === 'savings') return 'Savings count toward net worth but never toward safe-to-spend. Transfers in count as money set aside.';
+  if (type === 'credit') return 'Enter what you owe as a negative number (e.g. -250). Changing the balance adjusts the starting amount; your history stays the same.';
+  return 'Changing the balance adjusts the starting amount; your history stays the same.';
+}
 function openAccSheet(id) {
   const a = id ? acct(id) : null;
   const bal = a ? balances()[a.id] : 0;
   const st = a ? { ...a } : { name: '', type: 'checking', currency: S().currency, opening: '', emoji: '' };
   let emojiTouched = !!a;
-  const typeEmoji = { checking: '🏦', savings: '🐷', credit: '💳', cash: '💵' };
+  const typeEmoji = { checking: '🏦', savings: '🐷', investment: '📈', credit: '💳', cash: '💵' };
   const html = `<div class="row" style="margin-bottom:12px"><input class="input" id="a-emoji" value="${esc(st.emoji || typeEmoji[st.type])}" style="width:64px;text-align:center;font-size:24px" maxlength="8"><input class="input grow" id="a-name" value="${esc(st.name)}" placeholder="Account name"></div>
     <label class="field"><span>Type</span><select class="input" id="a-type">${Object.entries(ACCOUNT_TYPES).map(([k, l]) => `<option value="${k}" ${st.type === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     <label class="field"><span>Currency</span><select class="input" id="a-cur">${CURRENCIES.map(c => `<option value="${c.code}" ${c.code === st.currency ? 'selected' : ''}>${c.code} — ${esc(c.name)}</option>`).join('')}</select></label>
-    <label class="field"><span>${a ? 'Current balance' : 'Balance right now'}</span><input class="input num" id="a-bal" inputmode="decimal" value="${a ? round2(bal) : ''}" placeholder="0.00"></label>
-    <div class="small muted" style="margin:-6px 2px 12px">For credit cards, enter what you owe as a negative number (e.g. -250). Changing the balance adjusts the starting amount; your history stays the same.</div>
+    <label class="field"><span id="a-bal-label">${st.type === 'investment' ? (a ? 'Current value' : 'Value right now') : (a ? 'Current balance' : 'Balance right now')}</span><input class="input num" id="a-bal" inputmode="decimal" value="${a ? round2(bal) : ''}" placeholder="0.00"></label>
+    <div class="small muted" id="a-hint" style="margin:-6px 2px 12px">${acctHint(st.type, !!a)}</div>
     <button class="btn" data-save="1">${a ? 'Save' : 'Add account'}</button>
     ${a ? `<button class="btn ghost" data-view="1">View transactions</button><button class="btn ghost" data-arch="1">${a.archived ? 'Unarchive' : 'Archive'}</button><button class="btn danger" data-del="1">Delete account</button>` : ''}`;
   openSheet(a ? 'Account' : 'New account', html, {
     onMount: el => {
-      $('#a-type', el).onchange = e => { if (!emojiTouched) $('#a-emoji', el).value = typeEmoji[e.target.value]; };
+      $('#a-type', el).onchange = e => { const ty = e.target.value; if (!emojiTouched) $('#a-emoji', el).value = typeEmoji[ty]; $('#a-hint', el).innerHTML = acctHint(ty, !!a); $('#a-bal-label', el).textContent = ty === 'investment' ? (a ? 'Current value' : 'Value right now') : (a ? 'Current balance' : 'Balance right now'); };
       $('#a-emoji', el).oninput = () => emojiTouched = true;
       if (!a) setTimeout(() => $('#a-name', el).focus(), 60);
       el.addEventListener('click', e => {
@@ -315,7 +338,11 @@ function openAccSheet(id) {
           const nm = $('#a-name', el).value.trim(); if (!nm) return toast('Give it a name');
           const target = parseAmount($('#a-bal', el).value); const tv = isNaN(target) ? 0 : target;
           const rec = { name: nm, type: $('#a-type', el).value, currency: $('#a-cur', el).value, emoji: $('#a-emoji', el).value.trim() || typeEmoji[$('#a-type', el).value] };
-          if (a) { Object.assign(a, rec); a.opening = round2((+a.opening || 0) + (tv - bal)); }
+          if (a && rec.type === 'investment' && Math.abs(tv - bal) >= .005) {
+            // investments move with the market: record a dated value update so the chart shows growth
+            Object.assign(a, rec);
+            S().transactions.push({ id: uid(), created: Date.now(), date: today(), amount: round2(tv - bal), kind: 'adjust', categoryId: null, accountId: a.id, toAccountId: null, note: '', tags: [], planned: false });
+          } else if (a) { Object.assign(a, rec); a.opening = round2((+a.opening || 0) + (tv - bal)); }
           else S().accounts.push({ id: uid(), opening: round2(tv), ...rec });
           if (rec.currency !== S().currency && !S().rates[rec.currency]) toast(`Set a ${rec.currency} exchange rate in Settings › Currency`);
           closeSheet(); save(); render(); if (rec.currency === S().currency || S().rates[rec.currency]) toast('Saved');
@@ -565,7 +592,7 @@ const SETTINGS = {
   export() {
     const sp = S();
     const head = ['date', 'type', 'amount', 'currency', 'category', 'account', 'to_account', 'description', 'tags', 'planned'];
-    const rows = [...sp.transactions].sort((a, b) => a.date.localeCompare(b.date)).map(t => [t.date, t.kind, (t.kind === 'expense' ? -t.amount : t.amount).toFixed(2), acctCur(t.accountId), t.kind === 'transfer' ? '' : catName(t.categoryId), (acct(t.accountId) || {}).name, t.kind === 'transfer' ? (acct(t.toAccountId) || {}).name : '', t.note, (t.tags || []).join(' '), t.planned ? 'yes' : '']);
+    const rows = [...sp.transactions].sort((a, b) => a.date.localeCompare(b.date)).map(t => [t.date, t.kind, (t.kind === 'expense' ? -t.amount : t.amount).toFixed(2), acctCur(t.accountId), t.kind === 'transfer' || t.kind === 'adjust' ? '' : catName(t.categoryId), (acct(t.accountId) || {}).name, t.kind === 'transfer' ? (acct(t.toAccountId) || {}).name : '', t.note, (t.tags || []).join(' '), t.planned ? 'yes' : '']);
     download(`spendable-${sp.name.replace(/\W+/g, '-').toLowerCase()}-${today()}.csv`, [head, ...rows].map(r => r.map(csvCell).join(',')).join('\n'), 'text/csv');
     toast(`Exported ${rows.length} transactions`);
   },
