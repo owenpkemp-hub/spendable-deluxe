@@ -71,7 +71,11 @@ VIEWS.home = () => {
       <div class="prog"><i style="width:${Math.min(100, got / exp * 100)}%"></i></div>
       <div class="small muted" style="margin-top:8px">Safe-to-spend only counts money that has arrived. It goes up as income comes in.</div></div>`;
   }
-  return `${heroHTML()}
+  const daysSinceBackup = DB.lastBackup ? (Date.now() - DB.lastBackup) / 864e5 : Infinity;
+  const snoozed = DB.backupSnooze && (Date.now() - DB.backupSnooze) / 864e5 < 14;
+  const backupCard = sp.transactions.length >= 15 && daysSinceBackup > 30 && (Date.now() - (DB.installedAt || 0)) / 864e5 > 14 && !snoozed ? `<div class="card row"><div class="emoji">💾</div><div class="grow"><div class="t">Back up your data</div><div class="s">${DB.lastBackup ? `Last backup ${Math.floor(daysSinceBackup)} days ago` : 'Save a copy in Files or iCloud Drive in case this device is lost'}</div></div><div class="right"><button class="mini-btn" data-act="backup-now">Back up</button><br><button class="mini-btn" style="background:none;color:var(--muted)" data-act="backup-later">Later</button></div></div>` : '';
+  const iosTip = isIOS() && !isStandalone() ? `<div class="card row"><div class="emoji">📲</div><div class="grow"><div class="t">Add to Home Screen</div><div class="s">Use it from the icon so your data stays in one place</div></div><button class="mini-btn" data-act="ios-tip">How</button></div>` : '';
+  return `${iosTip}${heroHTML()}${backupCard}
   <div class="kpis">
     <div class="kpi"><div class="k">Left today</div><div class="v num ${s.todayLeft < 0 ? 'neg' : ''}">${fmt(s.todayLeft, null, { whole: Math.abs(s.todayLeft) >= 100 })}</div></div>
     <div class="kpi"><div class="k">Spent this period</div><div class="v num">${fmt(tot.expense, null, { whole: true })}</div></div>
@@ -365,8 +369,9 @@ function renderOnboarding() {
   document.body.classList.add('onboarding');
   $('#tabs').innerHTML = ''; $('#top').innerHTML = ''; $('#fab').style.display = 'none';
   const cur = guessCurrency();
-  $('#view').innerHTML = `<div class="onboard"><img src="../icons/icon-192.png" alt=""><h2>Know what's safe to spend</h2>
-    <p class="muted">A private budget tracker. No bank login, no sign-up. Your data stays on this device.</p></div>
+  $('#view').innerHTML = `<div class="onboard"><img src="icons/icon-192.png" alt=""><h2>Know what's safe to spend</h2>
+    <p class="muted">A private budget tracker. No bank login, no sign-up. Your data stays on this device.</p>
+    ${isIOS() && !isStandalone() ? `<div class="card small" style="text-align:left">📲 <b>On iPhone, add the app to your Home Screen before setting it up.</b> Tap Share <span aria-hidden="true">⎋</span>, then <b>Add to Home Screen</b>, and open Spendable from its icon. The Home Screen app keeps its own data, separate from Safari, so anything you enter here in Safari won't show up there.</div>` : ''}</div>
     <div class="card">
       <label class="field"><span>Currency</span><select class="input" id="ob-cur">${CURRENCIES.map(c => `<option value="${c.code}" ${c.code === cur ? 'selected' : ''}>${c.code} — ${esc(c.name)}</option>`).join('')}</select></label>
       <label class="field"><span>Checking account balance right now</span><input class="input num" id="ob-bal" inputmode="decimal" placeholder="0.00"></label>

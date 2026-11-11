@@ -127,12 +127,50 @@ function loadDB() {
   try { DB = JSON.parse(localStorage.getItem(KEY)); } catch (e) { DB = null; }
   if (!DB || !DB.spaces) DB = { v: 1, theme: 'auto', active: null, spaces: {}, notified: {} };
   DB.notified = DB.notified || {};
+  DB.installedAt = DB.installedAt || Date.now();
 }
-let saveTimer = null;
+/* Two copies: localStorage (instant) + IndexedDB (sturdier, survives localStorage clears). */
+let saveTimer = null, idbPending = null;
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(DB)); }
-  catch (e) { toast('Could not save — storage is full or blocked'); }
+  DB.savedAt = Date.now();
+  const json = JSON.stringify(DB);
+  try { localStorage.setItem(KEY, json); }
+  catch (e) { toast('Could not save to local storage. Keeping a copy in the database instead'); }
+  idbPending = json; clearTimeout(saveTimer); saveTimer = setTimeout(flushIDB, 250);
 }
+function flushIDB() { if (idbPending == null) return; const j = idbPending; idbPending = null; idbSet(j).catch(() => { }); }
+function idbOpen() {
+  return new Promise((res, rej) => {
+    if (!('indexedDB' in window)) return rej(new Error('no idb'));
+    const r = indexedDB.open('spendable-tracker', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function idbSet(json) { const db = await idbOpen(); return new Promise((res, rej) => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(json, KEY); tx.oncomplete = () => { db.close(); res(); }; tx.onerror = () => rej(tx.error); }); }
+async function idbGet() { const db = await idbOpen(); return new Promise((res, rej) => { const r = db.transaction('kv').objectStore('kv').get(KEY); r.onsuccess = () => { db.close(); res(r.result || null); }; r.onerror = () => rej(r.error); }); }
+/* If the IndexedDB copy is newer (or localStorage was wiped), use it. */
+async function recoverFromIDB() {
+  try {
+    const j = await idbGet(); if (!j) return false;
+    const d = JSON.parse(j);
+    if (!d || !d.spaces || !Object.keys(d.spaces).length) return false;
+    if (Object.keys(DB.spaces).length && (d.savedAt || 0) <= (DB.savedAt || 0)) return false;
+    DB = d; DB.notified = DB.notified || {};
+    try { localStorage.setItem(KEY, j); } catch (e) { }
+    return true;
+  } catch (e) { return false; }
+}
+let storagePersisted = null;
+async function requestPersistence() {
+  try {
+    if (!navigator.storage || !navigator.storage.persist) return;
+    storagePersisted = await navigator.storage.persisted();
+    if (!storagePersisted) storagePersisted = await navigator.storage.persist();
+  } catch (e) { }
+}
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const S = () => DB.spaces[DB.active];
 
 const DEFAULT_CATS = [

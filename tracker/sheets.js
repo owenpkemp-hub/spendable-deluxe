@@ -537,10 +537,24 @@ const SETTINGS = {
   backup() {
     const html = `<button class="btn" data-dl="1">Download backup</button>
       <label class="btn ghost" style="text-align:center;cursor:pointer">Restore from backup<input type="file" accept=".json,application/json" id="rs-file" hidden></label>
-      <div class="small muted">A backup holds every space, account, category, recurring item and transaction. Restoring replaces what's on this device.</div>`;
+      <div class="small muted">A backup holds every space, account, category, recurring item and transaction. Restoring replaces what's on this device. Use it to move to a new phone, too.</div>
+      <div class="sec-h">How your data is kept</div>
+      <div class="card small" style="line-height:1.6">✅ Saved automatically on every change, in two places on this device (browser storage and a database copy).<br>
+      ${storagePersisted ? '✅ This browser has agreed not to clear the data automatically.' : '⚠️ This browser may clear website data that goes unused for weeks. Use the app often, install it to your Home Screen, and keep a backup.'}<br>
+      ${DB.lastBackup ? `💾 Last backup: ${fmtDate(ymd(new Date(DB.lastBackup)), { month: 'short', day: 'numeric', year: 'numeric' })}` : '💾 No backup yet'}<br>
+      <span class="muted">Clearing Safari or Chrome website data, or deleting the app from your Home Screen, erases it, so back up first.</span></div>`;
     openSheet('Backup & restore', html, {
       onMount: el => {
-        $('[data-dl]', el).onclick = () => { download(`spendable-backup-${today()}.json`, JSON.stringify(DB, null, 1), 'application/json'); toast('Backup downloaded'); };
+        $('[data-dl]', el).onclick = async () => {
+          DB.lastBackup = Date.now(); save();
+          const name = `spendable-backup-${today()}.json`, text = JSON.stringify(DB, null, 1);
+          // On phones, the share sheet lets you save straight to Files / iCloud Drive / Google Drive
+          try {
+            const file = new File([text], name, { type: 'application/json' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Spendable backup' }); toast('Backup saved'); render(); return; }
+          } catch (e) { if (e.name === 'AbortError') return; }
+          download(name, text, 'application/json'); toast('Backup downloaded'); render();
+        };
         $('#rs-file', el).onchange = e => restoreBackup(e.target.files[0]);
       }
     });

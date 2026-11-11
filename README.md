@@ -22,6 +22,15 @@ Open `index.html` (or `spendable-deluxe.html`) directly in any modern desktop or
 
 # Spendable Tracker (`/tracker`)
 
+<p align="center"><img src="./tracker/cover.png" alt="Spendable Tracker: know what's safe to spend, every day" width="100%"></p>
+
+**Open it / add it to your Home Screen:** https://owenpkemp-hub.github.io/spendable-deluxe/tracker/
+
+- **iPhone:** open the link in **Safari**, tap **Share**, then **Add to Home Screen**. Open the app from its icon *before* entering any data: the Home Screen app keeps its own storage, separate from Safari.
+- **Android:** open in **Chrome**, then tap **⋮ › Install app**.
+
+**Your data:** every change is saved on your device straight away, in two places (browser storage plus an IndexedDB copy that restores the first if it's wiped). The app also asks the browser to protect that data from automatic clean-up. Nothing is uploaded. To move to a new phone, or as insurance, use **Settings › Backup & restore**. The app reminds you once a month. Deleting the Home Screen app or clearing the browser's website data erases it, so back up first.
+
 A second, full budget-tracker app that lives in [`tracker/`](./tracker/). It's an installable, offline web app (PWA) and works on iPhone, Android and desktop. Open `tracker/index.html` through any web server, or at `<your-pages-url>/tracker/` on GitHub Pages.
 
 ## Features

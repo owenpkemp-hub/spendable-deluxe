@@ -55,6 +55,9 @@ const ACTIONS = {
     processRecurring(); save(); render();
     toast('All set. Tap + to log a transaction');
   },
+  'backup-now'() { SETTINGS.backup(); },
+  'backup-later'() { DB.backupSnooze = Date.now(); save(); render(); },
+  'ios-tip'() { SETTINGS.install(); },
   'ob-sample'() { loadSample(); save(); render(); toast('Sample data loaded. Erase it any time in Settings'); }
 };
 document.addEventListener('click', e => {
@@ -118,7 +121,7 @@ function checkReminders(force) {
   if (!fresh.length) return;
   const text = fresh.map(u => `${u.name} ${fmt(u.amount, acctCur(u.accountId))} ${relDay(u.date).toLowerCase()}`).join(', ');
   if ('Notification' in window && Notification.permission === 'granted' && navigator.serviceWorker && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.ready.then(reg => reg.showNotification('Upcoming payments', { body: text, icon: '../icons/icon-192.png', tag: 'spendable-due' })).catch(() => toast('Due soon: ' + text));
+    navigator.serviceWorker.ready.then(reg => reg.showNotification('Upcoming payments', { body: text, icon: 'icons/icon-192.png', tag: 'spendable-due' })).catch(() => toast('Due soon: ' + text));
   } else toast('Due soon: ' + text, 'View', openCalendar);
 }
 
@@ -181,16 +184,22 @@ function loadSample() {
 }
 
 /* ===== Boot ===== */
-loadDB();
-applyTheme();
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
-if (DB.spaces && !DB.spaces[DB.active]) DB.active = Object.keys(DB.spaces)[0] || null;
-if (S()) { const n = processRecurring(); save(); if (n) setTimeout(() => toast(`${n} recurring payment${n > 1 ? 's' : ''} logged`), 400); }
-render();
-(() => {
+async function boot() {
+  loadDB();
+  if (await recoverFromIDB()) setTimeout(() => toast('Restored your data from the backup copy on this device'), 400);
+  applyTheme();
+  if (DB.spaces && !DB.spaces[DB.active]) DB.active = Object.keys(DB.spaces)[0] || null;
+  if (S()) { const n = processRecurring(); save(); if (n) setTimeout(() => toast(`${n} recurring payment${n > 1 ? 's' : ''} logged`), 400); }
+  render();
   const params = new URLSearchParams(location.search);
   if ([...params.keys()].length) { handleURL(params); history.replaceState(null, '', location.pathname); }
-})();
+  requestPersistence();
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+// make sure the last change reaches IndexedDB when the app is closed or backgrounded
+window.addEventListener('pagehide', flushIDB);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushIDB(); });
+boot();
 setTimeout(() => checkReminders(), 800);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible' || !S()) return;
