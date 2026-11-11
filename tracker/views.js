@@ -86,7 +86,7 @@ VIEWS.home = () => {
   ${incomeCard}
   <div class="sec-h">Upcoming <button class="link" data-act="calendar">Calendar</button></div>
   <div class="card flush">${ups.length ? `<ul class="list">${ups.map(upItemHTML).join('')}</ul>` : `<div class="empty small"><div class="e">🗓️</div>No bills or planned payments in the next 2 weeks.<br><button class="mini-btn" style="margin-top:10px" data-act="new-rec">Add a recurring bill</button></div>`}</div>
-  <div class="sec-h">Recent ${sp.walletLastSync ? `<label class="link" style="cursor:pointer;margin-left:auto">⚡ Sync Apple Pay<input type="file" accept=".txt,text/plain" data-wallet-sync hidden></label><button class="link" style="margin-left:14px" data-act="tab" data-tab="activity">See all</button>` : `<button class="link" data-act="tab" data-tab="activity">See all</button>`}</div>
+  <div class="sec-h">Recent ${sp.walletLastSync ? `<label class="link" style="cursor:pointer;margin-left:auto">⚡ Sync Apple Pay<input type="file" data-wallet-sync hidden></label><button class="link" style="margin-left:14px" data-act="tab" data-tab="activity">See all</button>` : `<button class="link" data-act="tab" data-tab="activity">See all</button>`}</div>
   <div class="card flush">${recent.length ? `<ul class="list">${recent.map(t => txItemHTML(t)).join('')}</ul>` : `<div class="empty small"><div class="e">✨</div>No transactions yet. Tap + to log your first one.</div>`}</div>`;
 };
 function upItemHTML(u) {

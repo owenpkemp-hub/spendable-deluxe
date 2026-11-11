@@ -508,12 +508,12 @@ const SETTINGS = {
           <span class="code" style="display:block;margin-top:6px">Current Date;Amount;Merchant</span>
           Tap in the box. The bar above the keyboard has the blue variables; swipe it sideways to find them. Pick <b>Current Date</b>. Then type a semicolon: tap the <b>123</b> key, then <b>;</b>. Pick <b>Shortcut Input</b>, tap the blue bubble and choose <b>Amount</b>. Type another <b>;</b>, add <b>Shortcut Input</b> again and choose <b>Merchant</b>.</li>
         <li>Leave the date format as it is. Spendable reads the default style.</li>
-        <li>Search for <b>Append to Text File</b> and add it. Tap the file name and set it to <b>Spendable Apple Pay</b>. Leave <b>Make New Line</b> on.</li>
+        <li>Search for <b>Append to Text File</b> and add it. Tap <b>File Path</b> and set it to <b>Spendable Apple Pay.txt</b>. Leave <b>Make New Line</b> on. You don't need to paste anything.</li>
         <li>Tap <b>Done</b>. The next time you tap to pay, a line is added to <i>iCloud Drive › Shortcuts › Spendable Apple Pay.txt</i>.</li>
       </ol>
       <div class="sec-h">2 · Sync into Spendable</div>
       <label class="field"><span>Log Apple Pay payments to</span><select class="input" id="wl-acc">${accOptions(sp.walletAccount || defaultAccount())}</select></label>
-      <label class="btn" style="text-align:center;cursor:pointer">⚡ Sync Apple Pay<input type="file" accept=".txt,text/plain" id="wl-file" hidden></label>
+      <label class="btn" style="text-align:center;cursor:pointer">⚡ Sync Apple Pay<input type="file" id="wl-file" hidden></label>
       <div class="small muted" style="margin:2px 2px 10px;line-height:1.5">Pick <b>Spendable Apple Pay</b> from Recents, or from iCloud Drive › Shortcuts. You can sync as often as you like; payments already imported are skipped. ${sp.walletLastSync ? `Last synced ${relDay(ymd(new Date(sp.walletLastSync))).toLowerCase()}.` : ''} Once you've synced, a <b>Sync Apple Pay</b> button also appears on Home.</div>
       <div class="sec-h">Good to know</div>
       <div class="small muted" style="line-height:1.6">• The Wallet automation needs iOS 17 or later. It runs for Apple Pay taps in stores, apps and websites with cards that support transaction automations (most debit and credit cards in Wallet).<br>
