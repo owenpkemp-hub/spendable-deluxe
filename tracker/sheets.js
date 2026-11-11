@@ -503,7 +503,7 @@ const SETTINGS = {
         <li>Tap <b>+</b> (top right), or <b>New Automation</b> if you don't have any yet.</li>
         <li>Scroll down and tap <b>Wallet</b>.</li>
         <li>Choose your cards (or leave it on any card), select <b>Run Immediately</b>, then tap <b>Next</b>.</li>
-        <li>Tap <b>New Blank Automation</b>, then <b>Add Action</b>.</li>
+        <li>On the next screen tap <b>Create New Shortcut</b> (older iOS calls it <b>New Blank Automation</b>). If you land straight in an empty editor with a search bar, you're already there. Then tap <b>Add Action</b> or the search bar.</li>
         <li>Search for <b>Text</b> and add it. In the text box, build this line:<br>
           <span class="code" style="display:block;margin-top:6px">Current Date | Amount | Merchant</span>
           To insert each blue variable, tap in the box and use the bar above the keyboard: pick <b>Current Date</b>, type <b>&nbsp;|&nbsp;</b>, pick <b>Shortcut Input</b>, then tap it and change it to <b>Amount</b>. Type <b>&nbsp;|&nbsp;</b>, add <b>Shortcut Input</b> again and change it to <b>Merchant</b>.</li>
