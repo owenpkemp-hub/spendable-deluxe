@@ -505,9 +505,9 @@ const SETTINGS = {
         <li>Choose your cards (or leave it on any card), select <b>Run Immediately</b>, then tap <b>Next</b>.</li>
         <li>On the next screen tap <b>Create New Shortcut</b> (older iOS calls it <b>New Blank Automation</b>). If you land straight in an empty editor with a search bar, you're already there. Then tap <b>Add Action</b> or the search bar.</li>
         <li>Search for <b>Text</b> and add it. In the text box, build this line:<br>
-          <span class="code" style="display:block;margin-top:6px">Current Date | Amount | Merchant</span>
-          To insert each blue variable, tap in the box and use the bar above the keyboard: pick <b>Current Date</b>, type <b>&nbsp;|&nbsp;</b>, pick <b>Shortcut Input</b>, then tap it and change it to <b>Amount</b>. Type <b>&nbsp;|&nbsp;</b>, add <b>Shortcut Input</b> again and change it to <b>Merchant</b>.</li>
-        <li>Tap the <b>Current Date</b> variable and set <b>Date Format</b> to <b>ISO 8601</b>.</li>
+          <span class="code" style="display:block;margin-top:6px">Current Date;Amount;Merchant</span>
+          Tap in the box. The bar above the keyboard has the blue variables; swipe it sideways to find them. Pick <b>Current Date</b>. Then type a semicolon: tap the <b>123</b> key, then <b>;</b>. Pick <b>Shortcut Input</b>, tap the blue bubble and choose <b>Amount</b>. Type another <b>;</b>, add <b>Shortcut Input</b> again and choose <b>Merchant</b>.</li>
+        <li>Leave the date format as it is. Spendable reads the default style.</li>
         <li>Search for <b>Append to Text File</b> and add it. Tap the file name and set it to <b>Spendable Apple Pay</b>. Leave <b>Make New Line</b> on.</li>
         <li>Tap <b>Done</b>. The next time you tap to pay, a line is added to <i>iCloud Drive › Shortcuts › Spendable Apple Pay.txt</i>.</li>
       </ol>
